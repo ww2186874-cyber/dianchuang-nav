@@ -2,14 +2,28 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>电创导航</title>
-  <meta name="description" content="实验室验证过的板子、程序、课程与资料入口。内容经审核后收录。">
-  <meta name="theme-color" content="#121010">
+  <meta name="description" content="大学生电子创新协会的静态入口站：实验室常用的板子、程序、课程与资料入口。">
+  <meta name="theme-color" content="#0c0a0a">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="电创导航">
+  <meta property="og:title" content="电创导航 · 大学生电子创新协会">
+  <meta property="og:description" content="实验室常用的板子、程序、课程与资料入口。">
+  <meta property="og:url" content="https://ww2186874-cyber.github.io/dianchuang-nav/">
+  <meta property="og:image" content="https://ww2186874-cyber.github.io/dianchuang-nav/assets/apple-touch-icon.png">
+  <meta property="og:image:width" content="180">
+  <meta property="og:image:height" content="180">
+  <meta property="og:image:alt" content="大学生电子创新协会标志">
+  <meta property="og:locale" content="zh_CN">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="电创导航 · 大学生电子创新协会">
+  <meta name="twitter:description" content="实验室常用的板子、程序、课程与资料入口。">
+  <meta name="twitter:image" content="https://ww2186874-cyber.github.io/dianchuang-nav/assets/apple-touch-icon.png">
   <link rel="icon" href="assets/favicon.ico" sizes="32x32">
   <link rel="icon" type="image/png" href="assets/favicon.png" sizes="48x48">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="assets/style.css?v=17">
+  <link rel="stylesheet" href="assets/style.css?v=18">
 </head>
 <body>
   <div class="bg" aria-hidden="true">
@@ -26,7 +40,7 @@
           <h1 id="title">电创导航</h1>
         </div>
       </div>
-      <p class="subtitle" id="subtitle">实验室验证过的板子、程序、课程与资料入口</p>
+      <p class="subtitle" id="subtitle">实验室常用的板子、程序、课程与资料入口</p>
       <p class="stats" id="stats"></p>
     </div>
   </header>
@@ -40,7 +54,8 @@
       <label class="search">
         <span class="visually-hidden">搜索</span>
         <span class="search-icon" aria-hidden="true"></span>
-        <input id="q" type="search" placeholder="搜索名称、说明或标签…" autocomplete="off">
+        <input id="q" type="search" placeholder="搜索名称、说明或标签…" title="按 / 快速搜索，Esc 清除" aria-keyshortcuts="/" autocomplete="off" enterkeyhint="search">
+        <button class="search-clear" id="q-clear" type="button" aria-label="清除搜索" title="清除（Esc）" hidden>✕</button>
         <span class="search-line"></span>
       </label>
       <nav class="chips" id="chips" aria-label="分类筛选">
@@ -52,14 +67,14 @@
   <main id="main"></main>
 
   <aside class="notice" id="notice">
-    内容经审核后收录。欢迎把要补充的资料发给维护人，通过后再加到站上。
+    想补充资料，发给维护人或提交到仓库即可。
   </aside>
 
   <footer class="site-footer">
     <p>电创导航 · 静态入口站</p>
   </footer>
 
-  <script src="data/links.js?v=17"></script>
-  <script src="assets/app.js?v=17"></script>
+  <script src="data/links.js?v=18"></script>
+  <script src="assets/app.js?v=18"></script>
 </body>
 </html>

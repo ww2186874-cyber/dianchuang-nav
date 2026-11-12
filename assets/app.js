@@ -21,6 +21,7 @@
   const inkEl = document.getElementById("chip-ink");
   const mainEl = document.getElementById("main");
   const qEl = document.getElementById("q");
+  const qClearEl = document.getElementById("q-clear");
 
   if (site.org) orgEl.textContent = site.org;
   if (site.title) titleEl.textContent = site.title;
@@ -41,6 +42,18 @@
     return (category.items || []).filter(function (item) {
       return item && item.title && (item.url || isCollection(item));
     });
+  }
+
+  // 统一排序：updated 倒序；同一天（或都没写日期）时，数据里排在后面的在前。
+  function sortItems(items) {
+    return items.map(function (item, index) {
+      return { item: item, index: index };
+    }).sort(function (a, b) {
+      const da = a.item.updated || "";
+      const db = b.item.updated || "";
+      if (da !== db) return da < db ? 1 : -1;
+      return b.index - a.index;
+    }).map(function (row) { return row.item; });
   }
 
   function pad2(n) {
@@ -96,9 +109,14 @@
   const total = categories.reduce(function (n, cat) {
     return n + publishedItems(cat).length;
   }, 0);
-  statsEl.innerHTML =
-    '<span class="stat"><i>条目</i><b>' + pad2(total) + "</b></span>" +
-    '<span class="stat"><i>分类</i><b>' + pad2(categories.length) + "</b></span>";
+  function renderStats(found) {
+    const first = found == null
+      ? '<span class="stat"><i>条目</i><b>' + pad2(total) + "</b></span>"
+      : '<span class="stat is-search"><i>搜索</i><b>找到 ' + found + " 条</b></span>";
+    statsEl.innerHTML = first +
+      '<span class="stat"><i>分类</i><b>' + pad2(categories.length) + "</b></span>";
+  }
+  renderStats(null);
 
   function setActiveChip(activeId) {
     chipsEl.querySelectorAll(".chip").forEach(function (btn) {
@@ -108,6 +126,23 @@
       else btn.removeAttribute("aria-current");
     });
     moveInk();
+    revealActiveChip();
+  }
+
+  function revealActiveChip() {
+    const active = chipsEl.querySelector(".chip.is-active");
+    if (!active || chipsEl.scrollWidth <= chipsEl.clientWidth) return;
+    // 把当前分类滚到中间，左右都能看到邻近的分类
+    const max = chipsEl.scrollWidth - chipsEl.clientWidth;
+    const target = active.offsetLeft - (chipsEl.clientWidth - active.offsetWidth) / 2;
+    chipsEl.scrollLeft = Math.max(0, Math.min(max, target));
+    updateChipFade();
+  }
+
+  // 移动端分类横向滑动：右侧还有内容时显示渐隐，滑到底就去掉
+  function updateChipFade() {
+    const more = chipsEl.scrollWidth - chipsEl.clientWidth - chipsEl.scrollLeft > 2;
+    chipsEl.classList.toggle("has-more", more);
   }
 
   function moveInk() {
@@ -143,15 +178,62 @@
   requestAnimationFrame(function () {
     requestAnimationFrame(moveInk);
   });
-  window.addEventListener("resize", moveInk);
+  window.addEventListener("resize", function () {
+    moveInk();
+    updateChipFade();
+  });
+  chipsEl.addEventListener("scroll", updateChipFade, { passive: true });
+  updateChipFade();
 
-  qEl.addEventListener("input", function () {
+  // 详情页里开始打字时跳回首页，在全部分类中显示结果
+  let searchFromItem = false;
+
+  function onQueryChange() {
+    qClearEl.hidden = !qEl.value;
     const route = parseRoute();
-    if (route.name === "item") {
+    if (route.name === "item" && norm(qEl.value)) {
+      searchFromItem = true;
       location.hash = "#/";
       return;
     }
     render({ animate: false });
+  }
+
+  function clearQuery() {
+    if (!qEl.value) return;
+    qEl.value = "";
+    searchFromItem = false;
+    onQueryChange();
+  }
+
+  qEl.addEventListener("input", onQueryChange);
+  qClearEl.hidden = !qEl.value;
+  qEl.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      if (qEl.value) {
+        e.preventDefault();
+        clearQuery();
+      } else {
+        qEl.blur();
+      }
+    }
+  });
+  qClearEl.addEventListener("click", function () {
+    clearQuery();
+    qEl.focus();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && qEl.value && e.target !== qEl) {
+      clearQuery();
+      return;
+    }
+    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+    const t = e.target;
+    const tag = t && t.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+    e.preventDefault();
+    qEl.focus();
+    qEl.select();
   });
 
   function norm(s) {
@@ -194,8 +276,8 @@
       const r = card.getBoundingClientRect();
       const x = (e.clientX - r.left) / r.width;
       const y = (e.clientY - r.top) / r.height;
-      card.style.setProperty("--rx", ((0.5 - y) * 8).toFixed(2) + "deg");
-      card.style.setProperty("--ry", ((x - 0.5) * 10).toFixed(2) + "deg");
+      card.style.setProperty("--rx", ((0.5 - y) * 3).toFixed(2) + "deg");
+      card.style.setProperty("--ry", ((x - 0.5) * 4).toFixed(2) + "deg");
     });
     card.addEventListener("pointerleave", function () {
       card.style.setProperty("--rx", "0deg");
@@ -245,16 +327,11 @@
   }
 
   function recentItems(cat, limit) {
-    const listed = publishedItems(cat).map(function (item, index) {
-      return { item: item, index: index };
-    });
-    listed.sort(function (a, b) {
-      const da = a.item.updated || "";
-      const db = b.item.updated || "";
-      if (da !== db) return da < db ? 1 : -1;
-      return b.index - a.index;
-    });
-    return listed.slice(0, limit).map(function (row) { return row.item; });
+    return sortItems(publishedItems(cat)).slice(0, limit);
+  }
+
+  function countBadge(n) {
+    return el("span", n ? "count" : "count is-zero", String(n));
   }
 
   function renderCatTile(cat, i, animate) {
@@ -275,7 +352,7 @@
     titleLink.href = catHref;
     title.appendChild(titleLink);
     head.appendChild(title);
-    head.appendChild(el("span", "count", String(publishedItems(cat).length)));
+    head.appendChild(countBadge(publishedItems(cat).length));
     tile.appendChild(head);
     tile.appendChild(el("p", "cat-tile-desc", cat.description || ""));
 
@@ -297,13 +374,18 @@
     return tile;
   }
 
-  function renderGroup(cat, items, animate, linkedTitle) {
+  // opts.linkedTitle：分类名做成链接（首页搜索结果）
+  // opts.back：分类页，返回链接放在面板顶部
+  function renderGroup(cat, items, animate, opts) {
+    opts = opts || {};
+    const linkedTitle = !!opts.linkedTitle;
     const section = el("section", "group");
     if (animate && !reduced) {
       section.style.setProperty("--d", "0ms");
     } else {
       section.style.animation = "none";
     }
+    if (opts.back) section.appendChild(backLink("#/", "返回首页"));
 
     const head = el("div", "group-head");
     const h2 = el("h2");
@@ -315,7 +397,7 @@
     } else {
       h2.appendChild(document.createTextNode(cat.name + " "));
     }
-    h2.appendChild(el("span", "count", String(items.length)));
+    h2.appendChild(countBadge(items.length));
     head.appendChild(h2);
     section.appendChild(head);
     if (cat.description) section.appendChild(el("p", "group-desc", cat.description));
@@ -324,7 +406,7 @@
     if (!items.length) {
       const emptyText = query
         ? "没有匹配的条目。"
-        : (cat.empty || "还没有已审核的条目。");
+        : (cat.empty || "还没有条目，欢迎补充。");
       const empty = el("p", "empty", emptyText);
       if (!animate || reduced) empty.style.animation = "none";
       section.appendChild(empty);
@@ -344,42 +426,151 @@
     document.title = page ? page + " · " + base : base;
   }
 
+  function searchHint(scope, raw, found, prefix) {
+    const p = el("p", "search-hint");
+    p.setAttribute("role", "status");
+    p.appendChild(document.createTextNode((prefix || "") + "在" + scope + "中搜索「"));
+    p.appendChild(el("b", "", raw));
+    p.appendChild(document.createTextNode("」 · 找到 " + found + " 条"));
+    const clear = el("button", "search-hint-clear", "清除");
+    clear.type = "button";
+    clear.addEventListener("click", function () {
+      clearQuery();
+      qEl.focus();
+    });
+    p.appendChild(clear);
+    return p;
+  }
+
+  function renderPendingRow(cats, animate) {
+    const row = el("p", "pending-row");
+    if (!animate || reduced) row.style.animation = "none";
+    row.appendChild(el("span", "pending-label", "待收录："));
+    cats.forEach(function (cat, i) {
+      if (i) row.appendChild(el("span", "pending-sep", " · "));
+      const a = el("a", "", cat.name);
+      a.href = "#/c/" + encodeURIComponent(cat.id);
+      row.appendChild(a);
+    });
+    return row;
+  }
+
   function renderHome(animate) {
     setDocumentTitle("");
-    const query = norm(qEl.value);
+    const raw = qEl.value.trim();
+    const query = norm(raw);
     if (!query) {
-      const grid = el("div", "cat-grid");
-      categories.forEach(function (cat, i) {
-        grid.appendChild(renderCatTile(cat, i, animate));
-      });
-      mainEl.appendChild(grid);
+      searchFromItem = false;
+      renderStats(null);
+      const filled = categories.filter(function (cat) { return publishedItems(cat).length; });
+      const pending = categories.filter(function (cat) { return !publishedItems(cat).length; });
+      if (filled.length) {
+        const grid = el("div", "cat-grid");
+        filled.forEach(function (cat, i) {
+          grid.appendChild(renderCatTile(cat, i, animate));
+        });
+        mainEl.appendChild(grid);
+      }
+      if (pending.length) mainEl.appendChild(renderPendingRow(pending, animate));
       return;
     }
+    let found = 0;
+    const groups = [];
     categories.forEach(function (cat) {
-      const items = publishedItems(cat).filter(function (item) {
+      const items = sortItems(publishedItems(cat).filter(function (item) {
         return matches(item, cat, query);
-      });
+      }));
       if (!items.length) return;
-      mainEl.appendChild(renderGroup(cat, items, animate, true));
+      found += items.length;
+      groups.push(renderGroup(cat, items, animate, { linkedTitle: true }));
     });
-    if (!mainEl.children.length) {
+    renderStats(found);
+    mainEl.appendChild(searchHint("全部分类", raw, found, searchFromItem ? "已回到首页，" : ""));
+    groups.forEach(function (g) { mainEl.appendChild(g); });
+    if (!groups.length) {
       mainEl.appendChild(el("p", "empty", "没有匹配的条目。"));
     }
   }
 
   function renderCategory(cat, animate) {
     setDocumentTitle(cat.name);
-    const head = el("div", "page-head");
-    if (animate && !reduced) head.style.setProperty("--d", "0ms");
-    else head.style.animation = "none";
-    head.appendChild(backLink("#/", "返回首页"));
-    mainEl.appendChild(head);
-
-    const query = norm(qEl.value);
-    const items = publishedItems(cat).filter(function (item) {
+    const raw = qEl.value.trim();
+    const query = norm(raw);
+    const items = sortItems(publishedItems(cat).filter(function (item) {
       return matches(item, cat, query);
+    }));
+    renderStats(query ? items.length : null);
+    if (query) mainEl.appendChild(searchHint("「" + cat.name + "」", raw, items.length));
+    mainEl.appendChild(renderGroup(cat, items, animate, { back: true }));
+  }
+
+  // size 可以写成 "8.2 MB" 这样的文字，也可以直接写字节数
+  function formatSize(size) {
+    if (typeof size === "number" && isFinite(size)) {
+      if (size >= 1024 * 1024) return (size / 1024 / 1024).toFixed(1) + " MB";
+      return Math.max(1, Math.round(size / 1024)) + " KB";
+    }
+    return String(size || "");
+  }
+
+  const KNOWN_EXT = ["zip", "rar", "7z", "tar", "gz", "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "exe", "msi", "apk", "hex", "bin"];
+  function extOf(url) {
+    try {
+      const path = new URL(url, location.href).pathname;
+      const m = path.match(/\.([a-z0-9]+)$/i);
+      const ext = m ? m[1].toLowerCase() : "";
+      return KNOWN_EXT.indexOf(ext) !== -1 ? ext : "";
+    } catch (err) {
+      return "";
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).catch(function () {
+        return legacyCopy(text);
+      });
+    }
+    return legacyCopy(text);
+  }
+
+  function legacyCopy(text) {
+    return new Promise(function (resolve, reject) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "-1000px";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+      document.body.removeChild(ta);
+      if (ok) resolve();
+      else reject(new Error("copy failed"));
     });
-    mainEl.appendChild(renderGroup(cat, items, animate, false));
+  }
+
+  function copyLinkButton() {
+    const btn = el("button", "copy-link", "复制链接");
+    btn.type = "button";
+    let timer = 0;
+    btn.addEventListener("click", function () {
+      copyText(location.href).then(function () {
+        btn.textContent = "已复制";
+        btn.classList.add("is-done");
+      }, function () {
+        btn.textContent = "复制失败，请手动复制地址栏";
+      }).then(function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          btn.textContent = "复制链接";
+          btn.classList.remove("is-done");
+        }, 1800);
+      });
+    });
+    return btn;
   }
 
   function metaRow(label, value, valueClass) {
@@ -399,7 +590,10 @@
     if (animate && !reduced) page.style.setProperty("--d", "0ms");
     else page.style.animation = "none";
 
-    page.appendChild(backLink("#/c/" + encodeURIComponent(cat.id), "返回" + cat.name));
+    const topRow = el("div", "detail-top");
+    topRow.appendChild(backLink("#/c/" + encodeURIComponent(cat.id), "返回" + cat.name));
+    topRow.appendChild(copyLinkButton());
+    page.appendChild(topRow);
 
     const kicker = el("p", "detail-kicker");
     const catLink = el("a", "", cat.name);
@@ -438,6 +632,14 @@
       }
     }
 
+    function fileNote(obj) {
+      const bits = [];
+      if (obj.size) bits.push(formatSize(obj.size));
+      const fmt = obj.format || extOf(obj.url);
+      if (fmt) bits.push(fmt);
+      return bits.filter(Boolean).join(" · ");
+    }
+
     function entryLink(label, url, note) {
       const a = el("a", "entry");
       a.href = url;
@@ -451,7 +653,16 @@
     const packs = packItems(item);
     if (packs.length) {
       const packList = el("section", "entry-list");
-      packList.appendChild(el("h3", "", "选择下载"));
+      const packHead = el("div", "entry-list-head");
+      packHead.appendChild(el("h3", "", "选择下载"));
+      if (item.allUrl) {
+        const all = el("a", "entry-all", "查看全部资料包");
+        all.href = item.allUrl;
+        all.rel = "noopener noreferrer";
+        all.target = "_blank";
+        packHead.appendChild(all);
+      }
+      packList.appendChild(packHead);
       packs.forEach(function (part) {
         const a = el("a", "entry pack-entry");
         a.href = part.url;
@@ -461,7 +672,7 @@
         body.appendChild(el("span", "entry-label", part.title));
         if (part.summary) body.appendChild(el("span", "pack-summary", part.summary));
         a.appendChild(body);
-        const note = hostNote(part.url);
+        const note = fileNote(part) || hostNote(part.url);
         if (note) a.appendChild(el("span", "entry-note", note));
         if (found.partId && itemId(part, cat) === found.partId) {
           a.classList.add("is-target");
@@ -477,8 +688,8 @@
     if (item.url) {
       list.appendChild(el("h3", "", "相关入口"));
       const mainBits = [];
-      const mainHost = hostNote(item.url);
-      if (mainHost) mainBits.push(mainHost);
+      const mainNote = fileNote(item) || hostNote(item.url);
+      if (mainNote) mainBits.push(mainNote);
       if (item.extractCode) mainBits.push("提取码 " + item.extractCode);
       if (item.expiry) mainBits.push(item.expiry);
       list.appendChild(entryLink(item.urlLabel || "资料下载", item.url, mainBits.join(" · ")));
@@ -502,7 +713,7 @@
     if (!animate || reduced) page.style.animation = "none";
     page.appendChild(backLink("#/", "返回首页"));
     page.appendChild(el("h2", "", kind === "category" ? "没有这个分类。" : "没有这条目。"));
-    page.appendChild(el("p", "group-desc", "可能是编号改过了，或这条还没有审核收录。"));
+    page.appendChild(el("p", "group-desc", "可能是编号改过了，回首页找找看。"));
     mainEl.appendChild(page);
   }
 
@@ -547,6 +758,7 @@
   window.addEventListener("hashchange", function () {
     render({ animate: true });
     if (!focusPack()) window.scrollTo(0, 0);
+    onScroll();
   });
 
   render();
