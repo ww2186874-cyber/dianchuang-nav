@@ -150,63 +150,52 @@ main,
 .hero-inner {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 44px 24px 36px;
+  padding: 16px 24px 14px;
   display: flex;
-  gap: 28px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.brand {
+  display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
 }
-.hero-text { min-width: 0; flex: 1; }
-.en-line {
-  margin: 0 0 8px;
-  font-family: ui-monospace, "Cascadia Mono", "Consolas", "Sarasa Gothic", "Source Code Pro", monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.22em;
-  color: var(--red-text);
-  animation: fade-up 0.8s var(--ease) both;
-}
+.hero-text { min-width: 0; }
 .org {
-  margin: 0 0 6px;
+  margin: 0 0 1px;
   color: var(--red-text);
-  font-size: 0.88rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   animation: fade-up 0.8s var(--ease) 0.08s both;
 }
 h1 {
   margin: 0;
   font-family: "DC Title", "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
-  font-size: clamp(2.6rem, 8vw, 5rem);
+  font-size: 1.55rem;
   font-weight: 400;
   font-synthesis: none;
-  letter-spacing: 0.12em;
-  line-height: 1.1;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
   animation: fade-up 0.95s var(--ease) 0.14s both;
 }
-h1::after {
-  content: "";
-  display: block;
-  width: 4.6rem;
-  height: 3px;
-  margin-top: 14px;
-  background: var(--red);
-  transform-origin: left center;
-  animation: draw-rule 0.7s var(--ease) 0.45s both;
-}
 .subtitle {
-  margin: 14px 0 0;
+  margin: 2px 0 0;
   color: var(--muted);
-  max-width: 28em;
+  font-size: 0.92rem;
+  max-width: 36em;
   animation: fade-up 0.8s var(--ease) 0.24s both;
 }
 .stats {
-  margin: 22px 0 0;
+  margin: 4px 0 0;
   display: flex;
-  gap: 36px;
+  gap: 24px;
   animation: fade-up 0.8s var(--ease) 0.32s both;
 }
 .stat + .stat {
-  padding-left: 36px;
+  padding-left: 24px;
   border-left: 1px solid var(--line);
 }
 .stat {
@@ -224,17 +213,16 @@ h1::after {
 .stat b {
   font-weight: 500;
   font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
-  font-size: 1.35rem;
+  font-size: 1.05rem;
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
 }
 
 .logo-wrap {
   position: relative;
-  width: 136px;
-  height: 136px;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
-  animation: fade-up 0.9s var(--ease) 0.2s both;
 }
 .logo-wrap::before {
   content: "";
@@ -259,12 +247,13 @@ h1::after {
   animation-direction: reverse;
 }
 .logo {
-  width: 136px;
-  height: 136px;
+  width: 44px;
+  height: 44px;
   display: block;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.35);
+  flex: 0 0 auto;
 }
 
 /* —— 工具条 —— */
@@ -475,13 +464,13 @@ main {
   font-weight: 500;
 }
 .group-desc {
-  margin: 6px 0 0 2.6rem;
+  margin: 6px 0 0;
   color: var(--muted);
   font-size: 0.95rem;
 }
 
 .empty {
-  margin: 16px 0 0 2.6rem;
+  margin: 16px 0 0;
   padding: 20px 18px;
   border: 1px dashed var(--line);
   border-radius: 2px;
@@ -512,7 +501,7 @@ main {
 }
 
 .grid {
-  margin: 16px 0 0 2.6rem;
+  margin: 16px 0 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 14px;
@@ -746,21 +735,15 @@ a.card:focus-visible h3 { color: var(--red-text); }
 }
 
 @media (max-width: 720px) {
-  .hero-inner {
-    padding: 28px 16px 24px;
-    gap: 20px;
-  }
-  .logo-wrap, .logo { width: 88px; height: 88px; }
-  .logo-ring { inset: -10px; }
-  .logo-ring--slow { inset: -16px; }
+  .hero-inner { padding: 14px 16px 12px; }
   main, .notice, .site-footer, .toolbar-inner { padding-left: 16px; padding-right: 16px; }
-  .group-desc, .empty, .grid { margin-left: 0; }
   body.is-compact .toolbar-inner {
     grid-template-columns: 1fr;
   }
   body.is-compact .search,
   body.is-compact .chips { grid-column: 1; }
-  .stats { gap: 20px; }
+  .stats { gap: 16px; }
+  .cat-grid { grid-template-columns: 1fr; }
 }
 
 
@@ -896,9 +879,11 @@ body.is-compact .chips { grid-column: 1 / -1; }
   .card,
   .page-head,
   .detail,
+  .cat-tile,
   .notice {
     animation: none !important;
   }
+  .cat-tile,
   .card,
   .btn,
   .btn::after,

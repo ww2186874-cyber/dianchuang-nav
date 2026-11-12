@@ -220,7 +220,20 @@
     return card;
   }
 
-  function renderGroup(cat, items, idx, animate, linkedTitle) {
+  function renderCatTile(cat, i, animate) {
+    const a = el("a", "cat-tile");
+    a.href = "#/c/" + encodeURIComponent(cat.id);
+    if (animate && !reduced) a.style.setProperty("--d", (i * 50) + "ms");
+    else a.style.animation = "none";
+    const head = el("div", "cat-tile-head");
+    head.appendChild(el("h2", "", cat.name));
+    head.appendChild(el("span", "count", String(publishedItems(cat).length)));
+    a.appendChild(head);
+    if (cat.description) a.appendChild(el("p", "", cat.description));
+    return a;
+  }
+
+  function renderGroup(cat, items, animate, linkedTitle) {
     const section = el("section", "group");
     if (animate && !reduced) {
       section.style.setProperty("--d", "0ms");
@@ -229,7 +242,6 @@
     }
 
     const head = el("div", "group-head");
-    head.appendChild(el("span", "index", pad2(idx + 1)));
     const h2 = el("h2");
     if (linkedTitle) {
       const a = el("a", "cat-link", cat.name);
@@ -271,18 +283,20 @@
   function renderHome(animate) {
     setDocumentTitle("");
     const query = norm(qEl.value);
-    let groupIndex = 0;
-    categories.forEach(function (cat, idx) {
+    if (!query) {
+      const grid = el("div", "cat-grid");
+      categories.forEach(function (cat, i) {
+        grid.appendChild(renderCatTile(cat, i, animate));
+      });
+      mainEl.appendChild(grid);
+      return;
+    }
+    categories.forEach(function (cat) {
       const items = publishedItems(cat).filter(function (item) {
         return matches(item, cat, query);
       });
-      if (query && !items.length) return;
-      const section = renderGroup(cat, items, idx, animate, true);
-      if (animate && !reduced) {
-        section.style.setProperty("--d", groupIndex * 70 + "ms");
-      }
-      mainEl.appendChild(section);
-      groupIndex += 1;
+      if (!items.length) return;
+      mainEl.appendChild(renderGroup(cat, items, animate, true));
     });
     if (!mainEl.children.length) {
       mainEl.appendChild(el("p", "empty", "没有匹配的条目。"));
@@ -301,8 +315,7 @@
     const items = publishedItems(cat).filter(function (item) {
       return matches(item, cat, query);
     });
-    const idx = categories.indexOf(cat);
-    mainEl.appendChild(renderGroup(cat, items, idx < 0 ? 0 : idx, animate, false));
+    mainEl.appendChild(renderGroup(cat, items, animate, false));
   }
 
   function metaRow(label, value, valueClass) {
