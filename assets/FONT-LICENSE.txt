@@ -1,0 +1,3 @@
+title-sc.ttf 取自 Noto Serif CJK SC Regular，仅包含「电创导航」四字。
+Noto 字体由 Google 以 SIL Open Font License 1.1 发布：
+https://scripts.sil.org/OFL
