@@ -92,21 +92,6 @@ body {
   animation: grain 0.55s steps(2) infinite;
   mix-blend-mode: overlay;
 }
-.pointer-glow {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 520px;
-  height: 520px;
-  margin: -260px 0 0 -260px;
-  background: radial-gradient(circle, rgba(224, 32, 32, 0.22), transparent 64%);
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0;
-  transition: opacity 0.45s ease;
-  will-change: transform;
-}
-body.has-pointer .pointer-glow { opacity: 1; }
 
 @keyframes grid-shift {
   to { background-position: 52px 52px; }
@@ -740,8 +725,7 @@ main {
   .btn::after,
   .chip-ink,
   .search-line::after,
-  .mini-brand,
-  .pointer-glow {
+  .mini-brand {
     transition: none !important;
   }
   .card:hover,

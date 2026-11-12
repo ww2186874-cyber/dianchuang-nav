@@ -253,33 +253,4 @@
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
-  if (!reduced && finePointer) {
-    const glow = document.getElementById("pointer-glow");
-    let tx = window.innerWidth * 0.7;
-    let ty = 80;
-    let x = tx;
-    let y = ty;
-    let running = false;
-
-    function loop() {
-      x += (tx - x) * 0.14;
-      y += (ty - y) * 0.14;
-      glow.style.transform = "translate(" + x + "px, " + y + "px)";
-      if (Math.abs(tx - x) + Math.abs(ty - y) > 0.4) {
-        requestAnimationFrame(loop);
-      } else {
-        running = false;
-      }
-    }
-
-    window.addEventListener("pointermove", function (e) {
-      tx = e.clientX;
-      ty = e.clientY;
-      document.body.classList.add("has-pointer");
-      if (!running) {
-        running = true;
-        requestAnimationFrame(loop);
-      }
-    });
-  }
 })();
