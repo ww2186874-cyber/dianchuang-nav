@@ -84,11 +84,6 @@ window.NAV_DATA = {
               label: "购买链接",
               url: "https://item.taobao.com/item.htm?id=745548099223",
               note: "淘宝"
-            },
-            {
-              label: "百度网盘",
-              url: "https://pan.baidu.com/s/1tBAhOXfA0FICQQFs3ELygA?pwd=f1p9",
-              note: "提取码 f1p9，永久有效"
             }
           ]
         }
