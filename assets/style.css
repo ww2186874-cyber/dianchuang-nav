@@ -765,8 +765,8 @@ a.card:focus-visible h3 { color: var(--red-text); }
 }
 .cat-tile {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(calc(0.9rem * 1.65 * 2), auto) 1fr;
   gap: 8px;
   min-height: 0;
   padding: 18px 18px 14px;
@@ -815,6 +815,7 @@ a.card:focus-visible h3 { color: var(--red-text); }
   margin: 0;
   color: #d2c8be;
   font-size: 0.9rem;
+  line-height: 1.65;
 }
 .cat-preview {
   margin: 6px 0 0;

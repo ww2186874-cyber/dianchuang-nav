@@ -275,7 +275,7 @@
     head.appendChild(title);
     head.appendChild(el("span", "count", String(publishedItems(cat).length)));
     tile.appendChild(head);
-    if (cat.description) tile.appendChild(el("p", "cat-tile-desc", cat.description));
+    tile.appendChild(el("p", "cat-tile-desc", cat.description || ""));
 
     const preview = el("ul", "cat-preview");
     const recents = recentItems(cat, 3);
