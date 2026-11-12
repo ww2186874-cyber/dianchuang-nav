@@ -220,17 +220,50 @@
     return card;
   }
 
+  function recentItems(cat, limit) {
+    const listed = publishedItems(cat).map(function (item, index) {
+      return { item: item, index: index };
+    });
+    listed.sort(function (a, b) {
+      const da = a.item.updated || "";
+      const db = b.item.updated || "";
+      if (da !== db) return da < db ? 1 : -1;
+      return b.index - a.index;
+    });
+    return listed.slice(0, limit).map(function (row) { return row.item; });
+  }
+
   function renderCatTile(cat, i, animate) {
-    const a = el("a", "cat-tile");
-    a.href = "#/c/" + encodeURIComponent(cat.id);
-    if (animate && !reduced) a.style.setProperty("--d", (i * 50) + "ms");
-    else a.style.animation = "none";
+    const tile = el("article", "cat-tile");
+    if (animate && !reduced) tile.style.setProperty("--d", (i * 50) + "ms");
+    else tile.style.animation = "none";
+
     const head = el("div", "cat-tile-head");
-    head.appendChild(el("h2", "", cat.name));
+    const title = el("h2");
+    const titleLink = el("a", "cat-link", cat.name);
+    titleLink.href = "#/c/" + encodeURIComponent(cat.id);
+    title.appendChild(titleLink);
+    head.appendChild(title);
     head.appendChild(el("span", "count", String(publishedItems(cat).length)));
-    a.appendChild(head);
-    if (cat.description) a.appendChild(el("p", "", cat.description));
-    return a;
+    tile.appendChild(head);
+    if (cat.description) tile.appendChild(el("p", "cat-tile-desc", cat.description));
+
+    const preview = el("ul", "cat-preview");
+    const recents = recentItems(cat, 3);
+    if (!recents.length) {
+      preview.appendChild(el("li", "cat-preview-empty", "还没有条目"));
+    } else {
+      recents.forEach(function (item) {
+        const li = el("li");
+        const a = el("a", "", item.title);
+        a.href = "#/i/" + encodeURIComponent(itemId(item, cat));
+        li.appendChild(a);
+        if (item.updated) li.appendChild(el("span", "cat-preview-date", formatDate(item.updated)));
+        preview.appendChild(li);
+      });
+    }
+    tile.appendChild(preview);
+    return tile;
   }
 
   function renderGroup(cat, items, animate, linkedTitle) {
