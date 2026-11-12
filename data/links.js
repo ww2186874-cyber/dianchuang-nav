@@ -75,17 +75,20 @@ window.NAV_DATA = {
           id: "tacker-dap-v3",
           title: "塔克无线DAP调试器资料 V3.0",
           summary: "厂家手册、产品宣传册，以及 Win7 串口驱动（Win8、10、11 无需安装）。",
-          url: "https://pan.baidu.com/s/1tBAhOXfA0FICQQFs3ELygA?pwd=f1p9",
+          url: "https://github.com/ww2186874-cyber/dianchuang-nav/releases/download/tacker-dap-v3/tacker-dap-v3.0.zip",
           source: "厂家资料",
-          extractCode: "f1p9",
-          expiry: "永久有效",
           tags: ["DAP", "调试器"],
-          updated: "2026-11-12",
+          updated: "2026-11-13",
           links: [
             {
               label: "购买链接",
               url: "https://item.taobao.com/item.htm?id=745548099223",
               note: "淘宝"
+            },
+            {
+              label: "百度网盘",
+              url: "https://pan.baidu.com/s/1tBAhOXfA0FICQQFs3ELygA?pwd=f1p9",
+              note: "提取码 f1p9，永久有效"
             }
           ]
         }
