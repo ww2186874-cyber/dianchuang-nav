@@ -260,10 +260,17 @@
     if (animate && !reduced) tile.style.setProperty("--d", (i * 50) + "ms");
     else tile.style.animation = "none";
 
+    const catHref = "#/c/" + encodeURIComponent(cat.id);
+    const hit = el("a", "cat-tile-hit");
+    hit.href = catHref;
+    hit.setAttribute("aria-hidden", "true");
+    hit.tabIndex = -1;
+    tile.appendChild(hit);
+
     const head = el("div", "cat-tile-head");
     const title = el("h2");
     const titleLink = el("a", "cat-link", cat.name);
-    titleLink.href = "#/c/" + encodeURIComponent(cat.id);
+    titleLink.href = catHref;
     title.appendChild(titleLink);
     head.appendChild(title);
     head.appendChild(el("span", "count", String(publishedItems(cat).length)));
