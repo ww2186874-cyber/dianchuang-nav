@@ -51,7 +51,9 @@
 
 ## 改样式、脚本或数据
 
-`index.html` 里引用的 `style.css`、`links.js`、`app.js` 共用同一个版本号参数（当前 `?v=20`）。改过这三个文件中的任意一个，就把这个数字加一，免得浏览器继续用旧缓存。GitHub Pages 自带的缓存是 10 分钟。
+`index.html` 里引用的 `style.css`、`links.js`、`app.js` 共用同一个版本号参数（当前 `?v=21`）。改过这三个文件中的任意一个，就把这个数字加一，免得浏览器继续用旧缓存。`og:image` 和 `twitter:image` 的地址也要用同一个 `?v=N`（例如 `assets/og-image.png?v=21`），换图后社交平台才更可能刷新缓存。GitHub Pages 自带的缓存是 10 分钟。
+
+如果改了站点名称或副标题，请同时重新生成 `assets/og-image.png`：深色背景 `#0c0a0a`，协会标志、标题、组织名和副标题，尺寸 1200×630。
 
 ## 发布到 GitHub Pages
 

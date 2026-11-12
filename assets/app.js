@@ -288,6 +288,53 @@
     return node;
   }
 
+  // 搜索高亮：先匹配完整查询词，再匹配按空白拆开的词；用文本节点和 <mark>，不拼 HTML
+  function highlightNeedles(query) {
+    const full = String(query || "").trim();
+    if (!full) return [];
+    const needles = [full];
+    full.split(/\s+/).forEach(function (tok) {
+      if (tok && needles.indexOf(tok) === -1) needles.push(tok);
+    });
+    needles.sort(function (a, b) { return b.length - a.length; });
+    return needles;
+  }
+
+  function appendHighlighted(parent, text, query) {
+    const raw = String(text == null ? "" : text);
+    const needles = highlightNeedles(query);
+    if (!raw || !needles.length) {
+      if (raw) parent.appendChild(document.createTextNode(raw));
+      return;
+    }
+    const lower = raw.toLowerCase();
+    const ranges = [];
+    needles.forEach(function (needle) {
+      let from = 0;
+      let i;
+      while ((i = lower.indexOf(needle, from)) !== -1) {
+        ranges.push({ start: i, end: i + needle.length });
+        from = i + needle.length;
+      }
+    });
+    ranges.sort(function (a, b) {
+      if (a.start !== b.start) return a.start - b.start;
+      return (b.end - b.start) - (a.end - a.start);
+    });
+    const kept = [];
+    ranges.forEach(function (r) {
+      if (kept.length && r.start < kept[kept.length - 1].end) return;
+      kept.push(r);
+    });
+    let pos = 0;
+    kept.forEach(function (r) {
+      if (r.start > pos) parent.appendChild(document.createTextNode(raw.slice(pos, r.start)));
+      parent.appendChild(el("mark", "", raw.slice(r.start, r.end)));
+      pos = r.end;
+    });
+    if (pos < raw.length) parent.appendChild(document.createTextNode(raw.slice(pos)));
+  }
+
   function formatDate(value) {
     if (!value) return "";
     const m = String(value).match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
@@ -316,7 +363,7 @@
     return a;
   }
 
-  function renderCard(item, cat, i, animate) {
+  function renderCard(item, cat, i, animate, query) {
     const id = itemId(item, cat);
     const detail = "#/i/" + encodeURIComponent(id);
     const card = el("a", "card");
@@ -327,13 +374,21 @@
       card.style.animation = "none";
     }
 
-    card.appendChild(el("h3", "", item.title));
-    if (item.summary) card.appendChild(el("p", "summary", item.summary));
+    const h3 = el("h3");
+    appendHighlighted(h3, item.title, query);
+    card.appendChild(h3);
+    if (item.summary) {
+      const sum = el("p", "summary");
+      appendHighlighted(sum, item.summary, query);
+      card.appendChild(sum);
+    }
 
     if (item.tags && item.tags.length) {
       const ul = el("ul", "tags");
       item.tags.forEach(function (tag) {
-        ul.appendChild(el("li", "", tag));
+        const li = el("li");
+        appendHighlighted(li, tag, query);
+        ul.appendChild(li);
       });
       card.appendChild(ul);
     }
@@ -440,7 +495,7 @@
 
     const grid = el("div", "grid");
     items.forEach(function (item, i) {
-      grid.appendChild(renderCard(item, cat, i, animate));
+      grid.appendChild(renderCard(item, cat, i, animate, query));
     });
     section.appendChild(grid);
     return section;
@@ -451,12 +506,12 @@
     document.title = page ? page + " · " + base : base;
   }
 
-  function searchHint(scope, raw, prefix) {
+  function searchHint(scope, raw, found, prefix) {
     const p = el("p", "search-hint");
     p.setAttribute("role", "status");
     p.appendChild(document.createTextNode((prefix || "") + "在" + scope + "中搜索「"));
     p.appendChild(el("b", "", raw));
-    p.appendChild(document.createTextNode("」 · "));
+    p.appendChild(document.createTextNode("」 · 共 " + found + " 条 · "));
     const clear = el("button", "search-hint-clear", "清除");
     clear.type = "button";
     clear.addEventListener("click", function () {
@@ -467,17 +522,21 @@
     return p;
   }
 
-  function renderPendingRow(cats, animate) {
-    const row = el("p", "pending-row");
-    if (!animate || reduced) row.style.animation = "none";
-    row.appendChild(el("span", "pending-label", "待收录："));
-    cats.forEach(function (cat, i) {
-      if (i) row.appendChild(el("span", "pending-sep", " · "));
+  function renderPendingTile(cats, i, animate) {
+    const tile = el("article", "cat-tile is-pending");
+    if (animate && !reduced) tile.style.setProperty("--d", (i * 50) + "ms");
+    else tile.style.animation = "none";
+    tile.appendChild(el("h2", "", "待收录"));
+    const list = el("ul", "pending-list");
+    cats.forEach(function (cat) {
+      const li = el("li");
       const a = el("a", "", cat.name);
       a.href = "#/c/" + encodeURIComponent(cat.id);
-      row.appendChild(a);
+      li.appendChild(a);
+      list.appendChild(li);
     });
-    return row;
+    tile.appendChild(list);
+    return tile;
   }
 
   function renderHome(animate) {
@@ -489,14 +548,16 @@
     if (!query) {
       const filled = categories.filter(function (cat) { return publishedItems(cat).length; });
       const pending = categories.filter(function (cat) { return !publishedItems(cat).length; });
-      if (filled.length) {
+      if (filled.length || pending.length) {
         const grid = el("div", "cat-grid");
         filled.forEach(function (cat, i) {
           grid.appendChild(renderCatTile(cat, i, animate));
         });
+        if (pending.length) {
+          grid.appendChild(renderPendingTile(pending, filled.length, animate));
+        }
         mainEl.appendChild(grid);
       }
-      if (pending.length) mainEl.appendChild(renderPendingRow(pending, animate));
       return;
     }
     let found = 0;
@@ -509,7 +570,7 @@
       found += items.length;
       groups.push(renderGroup(cat, items, animate, { linkedTitle: true }));
     });
-    mainEl.appendChild(searchHint("全部分类", raw, fromItem ? "已回到首页，" : ""));
+    mainEl.appendChild(searchHint("全部分类", raw, found, fromItem ? "已回到首页，" : ""));
     groups.forEach(function (g) { mainEl.appendChild(g); });
     if (!groups.length) {
       mainEl.appendChild(el("p", "empty", "没有匹配的条目。"));
@@ -523,7 +584,7 @@
     const items = sortItems(publishedItems(cat).filter(function (item) {
       return matches(item, cat, query);
     }));
-    if (query) mainEl.appendChild(searchHint("「" + cat.name + "」", raw));
+    if (query) mainEl.appendChild(searchHint("「" + cat.name + "」", raw, items.length));
     mainEl.appendChild(renderGroup(cat, items, animate, { back: true }));
   }
 
