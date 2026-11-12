@@ -51,7 +51,7 @@
 
 ## 改样式、脚本或数据
 
-`index.html` 里引用的 `style.css`、`links.js`、`app.js` 共用同一个版本号参数（当前 `?v=18`）。改过这三个文件中的任意一个，就把这个数字加一，免得浏览器继续用旧缓存。GitHub Pages 自带的缓存是 10 分钟。
+`index.html` 里引用的 `style.css`、`links.js`、`app.js` 共用同一个版本号参数（当前 `?v=19`）。改过这三个文件中的任意一个，就把这个数字加一，免得浏览器继续用旧缓存。GitHub Pages 自带的缓存是 10 分钟。
 
 ## 发布到 GitHub Pages
 

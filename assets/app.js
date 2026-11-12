@@ -109,14 +109,12 @@
   const total = categories.reduce(function (n, cat) {
     return n + publishedItems(cat).length;
   }, 0);
-  function renderStats(found) {
-    const first = found == null
-      ? '<span class="stat"><i>条目</i><b>' + pad2(total) + "</b></span>"
-      : '<span class="stat is-search"><i>搜索</i><b>找到 ' + found + " 条</b></span>";
-    statsEl.innerHTML = first +
+  function renderStats() {
+    statsEl.innerHTML =
+      '<span class="stat"><i>条目</i><b>' + pad2(total) + "</b></span>" +
       '<span class="stat"><i>分类</i><b>' + pad2(categories.length) + "</b></span>";
   }
-  renderStats(null);
+  renderStats();
 
   function setActiveChip(activeId) {
     chipsEl.querySelectorAll(".chip").forEach(function (btn) {
@@ -139,10 +137,11 @@
     updateChipFade();
   }
 
-  // 移动端分类横向滑动：右侧还有内容时显示渐隐，滑到底就去掉
+  // 移动端分类横向滑动：左右两侧还有未露出的分类时，对应一侧显示渐隐
   function updateChipFade() {
-    const more = chipsEl.scrollWidth - chipsEl.clientWidth - chipsEl.scrollLeft > 2;
-    chipsEl.classList.toggle("has-more", more);
+    const max = chipsEl.scrollWidth - chipsEl.clientWidth;
+    chipsEl.classList.toggle("has-more-left", chipsEl.scrollLeft > 2);
+    chipsEl.classList.toggle("has-more-right", max - chipsEl.scrollLeft > 2);
   }
 
   function moveInk() {
@@ -426,12 +425,12 @@
     document.title = page ? page + " · " + base : base;
   }
 
-  function searchHint(scope, raw, found, prefix) {
+  function searchHint(scope, raw, prefix) {
     const p = el("p", "search-hint");
     p.setAttribute("role", "status");
     p.appendChild(document.createTextNode((prefix || "") + "在" + scope + "中搜索「"));
     p.appendChild(el("b", "", raw));
-    p.appendChild(document.createTextNode("」 · 找到 " + found + " 条"));
+    p.appendChild(document.createTextNode("」 · "));
     const clear = el("button", "search-hint-clear", "清除");
     clear.type = "button";
     clear.addEventListener("click", function () {
@@ -459,9 +458,9 @@
     setDocumentTitle("");
     const raw = qEl.value.trim();
     const query = norm(raw);
+    const fromItem = searchFromItem;
+    searchFromItem = false;
     if (!query) {
-      searchFromItem = false;
-      renderStats(null);
       const filled = categories.filter(function (cat) { return publishedItems(cat).length; });
       const pending = categories.filter(function (cat) { return !publishedItems(cat).length; });
       if (filled.length) {
@@ -484,8 +483,7 @@
       found += items.length;
       groups.push(renderGroup(cat, items, animate, { linkedTitle: true }));
     });
-    renderStats(found);
-    mainEl.appendChild(searchHint("全部分类", raw, found, searchFromItem ? "已回到首页，" : ""));
+    mainEl.appendChild(searchHint("全部分类", raw, fromItem ? "已回到首页，" : ""));
     groups.forEach(function (g) { mainEl.appendChild(g); });
     if (!groups.length) {
       mainEl.appendChild(el("p", "empty", "没有匹配的条目。"));
@@ -499,8 +497,7 @@
     const items = sortItems(publishedItems(cat).filter(function (item) {
       return matches(item, cat, query);
     }));
-    renderStats(query ? items.length : null);
-    if (query) mainEl.appendChild(searchHint("「" + cat.name + "」", raw, items.length));
+    if (query) mainEl.appendChild(searchHint("「" + cat.name + "」", raw));
     mainEl.appendChild(renderGroup(cat, items, animate, { back: true }));
   }
 
@@ -585,6 +582,7 @@
     const item = found.item;
     const cat = found.cat;
     setDocumentTitle(item.title);
+    renderStats();
 
     const page = el("article", "detail");
     if (animate && !reduced) page.style.setProperty("--d", "0ms");
@@ -709,6 +707,7 @@
 
   function renderMissing(kind, animate) {
     setDocumentTitle("未找到");
+    renderStats();
     const page = el("div", "page-head");
     if (!animate || reduced) page.style.animation = "none";
     page.appendChild(backLink("#/", "返回首页"));
