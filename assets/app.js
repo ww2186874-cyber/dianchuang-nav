@@ -27,9 +27,19 @@
   if (site.subtitle) subEl.textContent = site.subtitle;
   if (site.notice) noticeEl.textContent = site.notice;
 
+  function packItems(item) {
+    return ((item && item.pack) || []).filter(function (part) {
+      return part && part.title && part.url;
+    });
+  }
+
+  function isCollection(item) {
+    return !!(item && item.title && packItems(item).length);
+  }
+
   function publishedItems(category) {
     return (category.items || []).filter(function (item) {
-      return item && item.title && item.url;
+      return item && item.title && (item.url || isCollection(item));
     });
   }
 
@@ -54,7 +64,12 @@
       const cat = categories[i];
       const items = publishedItems(cat);
       for (let j = 0; j < items.length; j++) {
-        if (itemId(items[j], cat) === id) return { item: items[j], cat: cat };
+        const item = items[j];
+        if (itemId(item, cat) === id) return { item: item, cat: cat };
+        const parts = packItems(item);
+        for (let k = 0; k < parts.length; k++) {
+          if (itemId(parts[k], cat) === id) return { item: item, cat: cat };
+        }
       }
     }
     return null;
@@ -151,6 +166,9 @@
       (item.tags || []).join(" "),
       cat.name
     ];
+    packItems(item).forEach(function (part) {
+      hay.push(part.title, part.summary);
+    });
     return norm(hay.join(" ")).indexOf(query) !== -1;
   }
 
@@ -211,11 +229,15 @@
       card.appendChild(ul);
     }
 
-    if (item.updated) {
-      const footer = el("footer", "links");
-      footer.appendChild(el("span", "updated", "更新于 " + formatDate(item.updated)));
-      card.appendChild(footer);
+    const packs = packItems(item);
+    const footer = el("footer", "links");
+    if (packs.length) {
+      footer.appendChild(el("span", "pack-count", packs.length + " 个资料包"));
     }
+    if (item.updated) {
+      footer.appendChild(el("span", "updated", "更新于 " + formatDate(item.updated)));
+    }
+    if (footer.children.length) card.appendChild(footer);
     bindTilt(card);
     return card;
   }
@@ -417,22 +439,47 @@
       return a;
     }
 
-    const list = el("section", "entry-list");
-    list.appendChild(el("h3", "", "相关入口"));
+    const packs = packItems(item);
+    if (packs.length) {
+      const packList = el("section", "entry-list pack-list");
+      packList.appendChild(el("h3", "", "选择下载"));
+      packs.forEach(function (part) {
+        const a = el("a", "entry pack-entry");
+        a.href = part.url;
+        a.rel = "noopener noreferrer";
+        a.target = "_blank";
+        const body = el("span", "pack-body");
+        body.appendChild(el("span", "entry-label", part.title));
+        if (part.summary) body.appendChild(el("span", "pack-summary", part.summary));
+        a.appendChild(body);
+        const note = hostNote(part.url);
+        if (note) a.appendChild(el("span", "entry-note", note));
+        packList.appendChild(a);
+      });
+      page.appendChild(packList);
+    }
 
-    const mainBits = [];
-    const mainHost = hostNote(item.url);
-    if (mainHost) mainBits.push(mainHost);
-    if (item.extractCode) mainBits.push("提取码 " + item.extractCode);
-    if (item.expiry) mainBits.push(item.expiry);
-    list.appendChild(entryLink(item.urlLabel || "资料下载", item.url, mainBits.join(" · ")));
+    const list = el("section", "entry-list");
+    let hasEntries = false;
+    if (item.url && !packs.length) {
+      list.appendChild(el("h3", "", "相关入口"));
+      const mainBits = [];
+      const mainHost = hostNote(item.url);
+      if (mainHost) mainBits.push(mainHost);
+      if (item.extractCode) mainBits.push("提取码 " + item.extractCode);
+      if (item.expiry) mainBits.push(item.expiry);
+      list.appendChild(entryLink(item.urlLabel || "资料下载", item.url, mainBits.join(" · ")));
+      hasEntries = true;
+    }
 
     (item.links || []).forEach(function (link) {
       if (!link || !link.url || !link.label) return;
+      if (!hasEntries) list.appendChild(el("h3", "", "相关入口"));
       const note = link.note || hostNote(link.url);
       list.appendChild(entryLink(link.label, link.url, note));
+      hasEntries = true;
     });
-    page.appendChild(list);
+    if (hasEntries) page.appendChild(list);
     mainEl.appendChild(page);
   }
 
