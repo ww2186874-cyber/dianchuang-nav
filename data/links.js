@@ -8,7 +8,8 @@
  *   hardware  硬件 / 板子 —— 只放实验室自己画的板子及配套程序，不放外购工具。
  *   software  软件 / 代码
  *   learning  学习路线
- *   docs      资料 —— 手册、外购工具资料、赛事与实验室资料。
+ *   heritage  课业传承 —— 学长学姐整理并传下来的上课资料。
+ *   docs      器件手册 —— 器件与外购工具手册、赛事与实验室资料。
  *
  * 字段说明：
  *   id          稳定编号（必填，详情页地址是 #/i/<id>）
@@ -47,7 +48,7 @@ window.NAV_DATA = {
     {
       id: "hardware",
       name: "硬件 / 板子",
-      description: "只收录实验室自己画的板子及配套程序，外购工具和厂家手册请放到「资料」。",
+      description: "只收录实验室自己画的板子及配套程序，外购工具和厂家手册请放到「器件手册」。",
       empty: "还没有已审核的自研板条目。实验室自己画的板子和配套程序，审核通过后会放在这里。",
       items: []
     },
@@ -66,10 +67,54 @@ window.NAV_DATA = {
       items: []
     },
     {
+      id: "heritage",
+      name: "课业传承",
+      description: "学长学姐整理并传下来的上课资料，方便后来的同学接着用、接着补。",
+      empty: "还没有条目。学长学姐整理的上课资料，审核后会放在这里。",
+      items: [
+        {
+          id: "jiben-gaoshu-d1-shang-qizhong",
+          title: "技本高数 · 大一上期中历年真题",
+          summary: "2018–2019 学年高数 B 期中试卷 1 份。",
+          url: "https://github.com/ww2186874-cyber/dianchuang-nav/releases/download/jiben-gaoshu-y1/jiben-gaoshu-d1-shang-qizhong.zip",
+          source: "学长学姐整理",
+          tags: ["高数", "技本", "试卷"],
+          updated: "2026-11-13"
+        },
+        {
+          id: "jiben-gaoshu-d1-shang-qimo",
+          title: "技本高数 · 大一上期末历年真题",
+          summary: "2014–2015 至 2025–2026 学年期末试卷 12 份（缺 2021–2022、2022–2023）。",
+          url: "https://github.com/ww2186874-cyber/dianchuang-nav/releases/download/jiben-gaoshu-y1/jiben-gaoshu-d1-shang-qimo.zip",
+          source: "学长学姐整理",
+          tags: ["高数", "技本", "试卷"],
+          updated: "2026-11-13"
+        },
+        {
+          id: "jiben-gaoshu-d1-xia-qizhong",
+          title: "技本高数 · 大一下期中历年真题",
+          summary: "2016–2017 至 2018–2019 三个学年的期中试卷 3 份。",
+          url: "https://github.com/ww2186874-cyber/dianchuang-nav/releases/download/jiben-gaoshu-y1/jiben-gaoshu-d1-xia-qizhong.zip",
+          source: "学长学姐整理",
+          tags: ["高数", "技本", "试卷"],
+          updated: "2026-11-13"
+        },
+        {
+          id: "jiben-gaoshu-d1-xia-qimo",
+          title: "技本高数 · 大一下期末历年真题",
+          summary: "2016–2017 至 2025–2026 学年期末、补考与考点等 14 份（含 3 张试卷照片；缺 2018–2019、2022–2023）。",
+          url: "https://github.com/ww2186874-cyber/dianchuang-nav/releases/download/jiben-gaoshu-y1/jiben-gaoshu-d1-xia-qimo.zip",
+          source: "学长学姐整理",
+          tags: ["高数", "技本", "试卷"],
+          updated: "2026-11-13"
+        }
+      ]
+    },
+    {
       id: "docs",
-      name: "资料",
-      description: "手册、外购工具资料，以及核对过的赛事与实验室资料。",
-      empty: "还没有已审核的资料。手册、外购工具和实验室资料核对后会放在这里。",
+      name: "器件手册",
+      description: "器件与外购工具的手册，以及核对过的赛事与实验室资料。",
+      empty: "还没有已审核的手册。器件、外购工具和实验室资料核对后会放在这里。",
       items: [
         {
           id: "tacker-dap-v3",
