@@ -192,19 +192,15 @@
   function renderCard(item, cat, i, animate) {
     const id = itemId(item, cat);
     const detail = "#/i/" + encodeURIComponent(id);
-    const card = el("article", "card");
+    const card = el("a", "card");
+    card.href = detail;
     if (animate && !reduced) {
       card.style.setProperty("--d", (80 + i * 55) + "ms");
     } else {
       card.style.animation = "none";
     }
 
-    const h3 = el("h3");
-    const a = el("a", "", item.title);
-    a.href = detail;
-    h3.appendChild(a);
-    card.appendChild(h3);
-
+    card.appendChild(el("h3", "", item.title));
     if (item.summary) card.appendChild(el("p", "summary", item.summary));
 
     if (item.tags && item.tags.length) {
@@ -215,14 +211,11 @@
       card.appendChild(ul);
     }
 
-    const footer = el("footer", "links");
-    const view = el("a", "btn", "查看");
-    view.href = detail;
-    footer.appendChild(view);
     if (item.updated) {
+      const footer = el("footer", "links");
       footer.appendChild(el("span", "updated", "更新于 " + formatDate(item.updated)));
+      card.appendChild(footer);
     }
-    card.appendChild(footer);
     bindTilt(card);
     return card;
   }
@@ -355,21 +348,45 @@
     if (item.updated) meta.appendChild(metaRow("更新", formatDate(item.updated)));
     if (meta.children.length) page.appendChild(meta);
 
-    const actions = el("footer", "links detail-actions");
-    const open = el("a", "btn primary", "打开资料");
-    open.href = item.url;
-    open.rel = "noopener noreferrer";
-    open.target = "_blank";
-    actions.appendChild(open);
+    function hostNote(url) {
+      try {
+        const host = new URL(url, location.href).hostname.replace(/^www\./, "");
+        if (host.indexOf("pan.baidu.com") !== -1) return "百度网盘";
+        if (host.indexOf("taobao.com") !== -1 || host.indexOf("tb.cn") !== -1) return "淘宝";
+        if (host.indexOf("tmall.com") !== -1) return "天猫";
+        if (host.indexOf("bilibili.com") !== -1) return "哔哩哔哩";
+        return host;
+      } catch (err) {
+        return "";
+      }
+    }
+
+    function entryLink(label, url, note) {
+      const a = el("a", "entry");
+      a.href = url;
+      a.rel = "noopener noreferrer";
+      a.target = "_blank";
+      a.appendChild(el("span", "entry-label", label));
+      if (note) a.appendChild(el("span", "entry-note", note));
+      return a;
+    }
+
+    const list = el("section", "entry-list");
+    list.appendChild(el("h3", "", "相关入口"));
+
+    const mainBits = [];
+    const mainHost = hostNote(item.url);
+    if (mainHost) mainBits.push(mainHost);
+    if (item.extractCode) mainBits.push("提取码 " + item.extractCode);
+    if (item.expiry) mainBits.push(item.expiry);
+    list.appendChild(entryLink(item.urlLabel || "资料下载", item.url, mainBits.join(" · ")));
+
     (item.links || []).forEach(function (link) {
       if (!link || !link.url || !link.label) return;
-      const extra = el("a", "btn", link.label);
-      extra.href = link.url;
-      extra.rel = "noopener noreferrer";
-      extra.target = "_blank";
-      actions.appendChild(extra);
+      const note = link.note || hostNote(link.url);
+      list.appendChild(entryLink(link.label, link.url, note));
     });
-    page.appendChild(actions);
+    page.appendChild(list);
     mainEl.appendChild(page);
   }
 

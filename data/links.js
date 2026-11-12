@@ -14,13 +14,15 @@
  *   id          稳定编号（必填，详情页地址是 #/i/<id>）
  *   title       名称（必填）
  *   summary     一两句说明
- *   url         主链接（必填，没有则不展示；详情页的打开/下载用这个地址）
+ *   url         主链接（必填，没有则不展示；详情页「资料下载」用这个地址）
+ *   urlLabel    主链接在详情页上的名称，默认「资料下载」
  *   source      来源，如 “实验室自绘” 或 “厂家手册”
  *   extractCode 网盘提取码（如有）
  *   expiry      链接有效期，如 “永久” 或 “2026-12-31”
  *   tags        标签，如 ["STM32", "已验证"]
  *   updated     最近更新日期，建议 YYYY-MM-DD
- *   links       可选的额外按钮，如 [{ "label": "源码", "url": "https://..." }]
+ *   links       详情页的额外入口，如购买、视频教程：
+ *               [{ "label": "购买链接", "url": "https://...", "note": "淘宝" }]
  *
  * 条目示例（复制到 items 里，换成真实核对过的链接后再保留）：
  * {
@@ -78,7 +80,14 @@ window.NAV_DATA = {
           extractCode: "f1p9",
           expiry: "永久有效",
           tags: ["DAP", "调试器"],
-          updated: "2026-11-12"
+          updated: "2026-11-12",
+          links: [
+            {
+              label: "购买链接",
+              url: "https://item.taobao.com/item.htm?id=745548099223",
+              note: "淘宝"
+            }
+          ]
         }
       ]
     }
