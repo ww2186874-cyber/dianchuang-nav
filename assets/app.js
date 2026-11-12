@@ -65,10 +65,12 @@
       const items = publishedItems(cat);
       for (let j = 0; j < items.length; j++) {
         const item = items[j];
-        if (itemId(item, cat) === id) return { item: item, cat: cat };
+        if (itemId(item, cat) === id) return { item: item, cat: cat, partId: "" };
         const parts = packItems(item);
         for (let k = 0; k < parts.length; k++) {
-          if (itemId(parts[k], cat) === id) return { item: item, cat: cat };
+          if (itemId(parts[k], cat) === id) {
+            return { item: item, cat: cat, partId: id };
+          }
         }
       }
     }
@@ -448,7 +450,7 @@
 
     const packs = packItems(item);
     if (packs.length) {
-      const packList = el("section", "entry-list pack-list");
+      const packList = el("section", "entry-list");
       packList.appendChild(el("h3", "", "选择下载"));
       packs.forEach(function (part) {
         const a = el("a", "entry pack-entry");
@@ -461,6 +463,10 @@
         a.appendChild(body);
         const note = hostNote(part.url);
         if (note) a.appendChild(el("span", "entry-note", note));
+        if (found.partId && itemId(part, cat) === found.partId) {
+          a.classList.add("is-target");
+          packFocus = a;
+        }
         packList.appendChild(a);
       });
       page.appendChild(packList);
@@ -468,7 +474,7 @@
 
     const list = el("section", "entry-list");
     let hasEntries = false;
-    if (item.url && !packs.length) {
+    if (item.url) {
       list.appendChild(el("h3", "", "相关入口"));
       const mainBits = [];
       const mainHost = hostNote(item.url);
@@ -501,15 +507,24 @@
   }
 
   let firstPaint = true;
+  let packFocus = null;
+
+  function focusPack() {
+    const target = packFocus;
+    packFocus = null;
+    if (!target) return false;
+    target.scrollIntoView({ block: "center" });
+    return true;
+  }
 
   function render(opts) {
     const route = parseRoute();
     const animate = firstPaint || (opts && opts.animate);
     firstPaint = false;
     mainEl.innerHTML = "";
+    packFocus = null;
 
     document.body.classList.toggle("is-subpage", route.name !== "home");
-    document.body.classList.toggle("is-detail", route.name === "item");
 
     if (route.name === "category") {
       const cat = findCategory(route.id);
@@ -531,10 +546,11 @@
 
   window.addEventListener("hashchange", function () {
     render({ animate: true });
-    window.scrollTo(0, 0);
+    if (!focusPack()) window.scrollTo(0, 0);
   });
 
   render();
+  focusPack();
 
   let compact = false;
   function onScroll() {
