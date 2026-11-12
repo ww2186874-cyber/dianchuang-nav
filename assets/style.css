@@ -141,12 +141,6 @@ main,
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--bg) 88%, #000);
 }
-.hero::before {
-  content: "";
-  display: block;
-  height: 3px;
-  background: linear-gradient(90deg, var(--red) 0 28%, transparent 28%);
-}
 .hero-inner {
   max-width: var(--max);
   margin: 0 auto;
