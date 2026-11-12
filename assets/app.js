@@ -158,21 +158,47 @@
       (r.top - nav.top + chipsEl.scrollTop) + "px)";
   }
 
-  const allBtn = document.createElement("a");
-  allBtn.className = "chip is-active";
-  allBtn.href = "#/";
-  allBtn.setAttribute("data-id", "");
-  allBtn.textContent = "全部";
-  chipsEl.appendChild(allBtn);
-
-  categories.forEach(function (cat) {
+  function makeChip(href, id, text, active) {
     const btn = document.createElement("a");
-    btn.className = "chip";
-    btn.href = "#/c/" + encodeURIComponent(cat.id);
-    btn.setAttribute("data-id", cat.id);
-    btn.textContent = cat.name;
-    chipsEl.appendChild(btn);
+    btn.className = "chip" + (active ? " is-active" : "");
+    btn.href = href;
+    btn.setAttribute("data-id", id);
+    btn.draggable = false;
+    btn.textContent = text;
+    return btn;
+  }
+
+  chipsEl.appendChild(makeChip("#/", "", "全部", true));
+  categories.forEach(function (cat) {
+    chipsEl.appendChild(makeChip("#/c/" + encodeURIComponent(cat.id), cat.id, cat.name, false));
   });
+
+  // 链接在鼠标微动时会被浏览器当成拖拽，从而吃掉 click。禁止拖拽，并在小位移内仍按点击切换。
+  chipsEl.addEventListener("dragstart", function (e) {
+    e.preventDefault();
+  });
+  let chipPress = null;
+  chipsEl.addEventListener("pointerdown", function (e) {
+    const chip = e.target.closest(".chip");
+    if (!chip || e.button !== 0) return;
+    chipPress = { x: e.clientX, y: e.clientY, chip: chip, id: e.pointerId };
+  });
+  function endChipPress(e) {
+    if (!chipPress || e.pointerId !== chipPress.id) return;
+    const press = chipPress;
+    chipPress = null;
+    if (e.type === "pointercancel") return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    const dx = e.clientX - press.x;
+    const dy = e.clientY - press.y;
+    if (dx * dx + dy * dy > 16 * 16) return;
+    const over = document.elementFromPoint(e.clientX, e.clientY);
+    if (!over || !press.chip.contains(over)) return;
+    const href = press.chip.getAttribute("href");
+    if (href && location.hash !== href) location.hash = href;
+  }
+  chipsEl.addEventListener("pointerup", endChipPress);
+  chipsEl.addEventListener("pointercancel", endChipPress);
 
   requestAnimationFrame(function () {
     requestAnimationFrame(moveInk);
