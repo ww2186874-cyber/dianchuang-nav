@@ -4,6 +4,20 @@
 
 大家都可以打开网站查看。要增加内容时，把资料发给维护人，审核通过后再写入数据文件。
 
+线上地址：<https://ww2186874-cyber.github.io/dianchuang-nav/>
+
+## 页面跳转
+
+站点是静态的，用地址栏哈希来换页，刷新和直接打开 `index.html` 都可以：
+
+- `#/` 首页（全部分类）
+- `#/c/<分类id>` 分类页，例如 `#/c/docs`
+- `#/i/<条目id>` 详情页，例如 `#/i/tacker-dap-v3`
+
+分类 id：`hardware`（硬件 / 板子）、`software`（软件 / 代码）、`learning`（学习路线）、`docs`（资料）。
+
+「硬件 / 板子」只放实验室自己画的板子及配套程序，外购工具和厂家手册放到「资料」。
+
 ## 本地预览
 
 用浏览器直接打开 `index.html` 即可（数据写在 `data/links.js` 里，不依赖本地服务器）。
@@ -15,24 +29,27 @@
 
 ```js
 {
+  id: "example-board",
   title: "示例板卡",
   summary: "实验室已验证，附配套程序说明。",
   url: "https://example.com/your-real-link",
+  source: "实验室自绘",
   tags: ["已验证"],
   updated: "2026-11-12",
   links: [{ label: "源码", url: "https://example.com/repo" }]
 }
 ```
 
-3. 保存后刷新页面。没有 `url` 的条目不会出现在页面上。
-4. 发布到 GitHub Pages 后，把这次修改提交到仓库，网站会跟着更新。
+3. 网盘链接如有提取码或有效期，加上 `extractCode` 和 `expiry`，会显示在详情页。
+4. 保存后刷新页面。没有 `title` 和 `url` 的条目不会出现。详情页需要稳定且不重复的 `id`。
+5. 发布到 GitHub Pages 后，把这次修改提交到仓库，网站会跟着更新。
 
-分类目前有四个：`硬件 / 板子`、`软件 / 代码`、`学习路线`、`资料`。站点标题、说明可以在同一文件顶部的 `site` 里改。
+站点标题、说明可以在同一文件顶部的 `site` 里改。
 
 ## 发布到 GitHub Pages
 
-文件准备好、维护人确认后再发布。用 GitHub 仓库的 Pages 功能，选择主分支的根目录（或 `/docs`，需与仓库设置一致）。网站地址一般是：
+文件准备好、维护人确认后再发布。用 GitHub 仓库的 Pages 功能，选择主分支的根目录（或 `/docs`，需与仓库设置一致）。网站地址：
 
-`https://<GitHub用户名>.github.io/<仓库名>/`
+https://ww2186874-cyber.github.io/dianchuang-nav/
 
-改完提交后稍等一会儿即可在网上看到。
+改完提交后稍等一会儿即可在网上看到。若浏览器还是旧页面，用 Ctrl+F5 强制刷新。

@@ -414,6 +414,7 @@ body.is-compact .chips { grid-column: 1 / -1; }
   border: 0;
   background: transparent;
   color: var(--ink);
+  text-decoration: none;
   border-radius: 2px;
   padding: 6px 14px;
   font: inherit;
@@ -700,6 +701,117 @@ main {
   .stats { gap: 20px; }
 }
 
+
+.cat-link {
+  color: inherit;
+  text-decoration: none;
+}
+.cat-link:hover { color: var(--red-text); }
+
+/* —— 分类页 / 详情页 —— */
+body.is-subpage .hero { display: none; }
+body.is-subpage .mini-brand,
+body.is-compact .mini-brand {
+  display: inline-flex;
+  opacity: 1;
+  transform: none;
+}
+body.is-subpage .toolbar-inner,
+body.is-compact .toolbar-inner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 16px;
+}
+body.is-subpage .search,
+body.is-compact .search { grid-column: 2; }
+body.is-subpage .chips,
+body.is-compact .chips { grid-column: 1 / -1; }
+
+.page-head,
+.detail {
+  padding: 28px 0 10px;
+  animation: fade-up 0.7s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+.back::before { content: "←"; }
+.back:hover { color: var(--red-text); }
+
+.page-head h2,
+.detail h2 {
+  margin: 14px 0 8px;
+  font-size: 1.7rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+}
+.detail-kicker {
+  margin: 14px 0 0;
+  font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  color: var(--red-text);
+  text-transform: none;
+}
+.detail-kicker a {
+  color: inherit;
+  text-decoration: none;
+}
+.detail-kicker a:hover { color: #fff; }
+.detail-summary {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 1.02rem;
+  max-width: 40em;
+}
+.detail-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px 28px;
+  margin: 22px 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.detail-row i {
+  display: block;
+  font-style: normal;
+  font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.detail-row b {
+  font-weight: 500;
+  color: var(--ink);
+}
+.extract {
+  font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  color: var(--red-text);
+  letter-spacing: 0.1em;
+}
+.detail-actions { margin-top: 8px; }
+
+@media (max-width: 720px) {
+  body.is-subpage .toolbar-inner,
+  body.is-compact .toolbar-inner {
+    grid-template-columns: 1fr;
+  }
+  body.is-subpage .search,
+  body.is-subpage .chips,
+  body.is-compact .search,
+  body.is-compact .chips { grid-column: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .bg-grid,
@@ -717,6 +829,8 @@ main {
   .logo-wrap,
   .group,
   .card,
+  .page-head,
+  .detail,
   .notice {
     animation: none !important;
   }
