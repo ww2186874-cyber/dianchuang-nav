@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>电创导航</title>
+  <meta name="description" content="实验室验证过的板子、程序、课程与资料入口。内容经审核后收录。">
+  <link rel="icon" href="assets/favicon.ico" sizes="32x32">
+  <link rel="icon" type="image/png" href="assets/favicon.png" sizes="48x48">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <img class="logo" src="assets/logo.png" width="72" height="72" alt="大学生电子创新协会标志">
+      <div class="hero-text">
+        <p class="org" id="org">大学生电子创新协会</p>
+        <h1 id="title">电创导航</h1>
+        <p class="subtitle" id="subtitle">实验室验证过的板子、程序、课程与资料入口</p>
+        <p class="stats" id="stats"></p>
+      </div>
+    </div>
+  </header>
+
+  <div class="toolbar" role="search">
+    <div class="toolbar-inner">
+      <label class="search">
+        <span class="visually-hidden">搜索</span>
+        <input id="q" type="search" placeholder="搜索名称、说明或标签…" autocomplete="off">
+      </label>
+      <nav class="chips" id="chips" aria-label="分类筛选"></nav>
+    </div>
+  </div>
+
+  <main id="main"></main>
+
+  <aside class="notice" id="notice">
+    内容经审核后收录。欢迎把要补充的资料发给维护人，通过后再加到站上。
+  </aside>
+
+  <footer class="site-footer">
+    <p>电创导航 · 静态入口站 · 用 GitHub Pages 托管</p>
+  </footer>
+
+  <script src="data/links.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
