@@ -162,6 +162,17 @@ window.NAV_DATA = {
           source: "电子创新协会",
           tags: ["MSPM0", "引脚规划"],
           updated: "2026-11-13"
+        },
+        {
+          id: "esp32s3-pin-planner",
+          title: "ESP32-S3 引脚规划器",
+          summary: "嘉立创 ESP32-S3R8N8 开发板专用，按这块板的排针、板载占用和芯片约束做引脚规划，可在网页里直接打开使用。",
+          url: "tools/esp32s3-pin-planner.html",
+          urlLabel: "打开工具",
+          format: "网页版",
+          source: "电子创新协会",
+          tags: ["ESP32-S3", "嘉立创"],
+          updated: "2026-11-13"
         }
       ]
     }
