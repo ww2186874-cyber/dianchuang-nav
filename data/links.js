@@ -9,6 +9,7 @@
  *   learning  学习路线
  *   heritage  课业传承 —— 学长学姐整理并传下来的上课资料。
  *   docs      器件手册 —— 器件与外购工具手册、赛事与实验室资料。
+ *   tools      在线工具 —— 实验室做的、可在网页里直接打开使用的小工具。
  *
  * 字段说明：
  *   id          稳定编号（必填，详情页地址是 #/i/<id>）
@@ -142,6 +143,25 @@ window.NAV_DATA = {
               note: "淘宝"
             }
           ]
+        }
+      ]
+    },
+    {
+      id: "tools",
+      name: "在线工具",
+      description: "实验室做的、可在网页里直接打开使用的小工具。",
+      empty: "还没有工具，欢迎补充。",
+      items: [
+        {
+          id: "mspm0-pin-planner",
+          title: "MSPM0 引脚规划器",
+          summary: "用于 MSPM0G3519、MSPM0G3507 的引脚规划，支持多种封装和天猛星 PM-64 板卡模板，可在网页里直接打开使用。",
+          url: "tools/mspm0-pin-planner.html",
+          urlLabel: "打开工具",
+          format: "网页版",
+          source: "电子创新协会",
+          tags: ["MSPM0", "引脚规划"],
+          updated: "2026-11-13"
         }
       ]
     }
