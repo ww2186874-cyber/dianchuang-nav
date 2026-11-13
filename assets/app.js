@@ -406,52 +406,58 @@
     return card;
   }
 
-  function recentItems(cat, limit) {
-    return sortItems(publishedItems(cat)).slice(0, limit);
-  }
-
   function countBadge(n) {
     return el("span", n ? "count" : "count is-zero", String(n));
   }
 
-  function renderCatTile(cat, i, animate) {
-    const tile = el("article", "cat-tile");
-    if (animate && !reduced) tile.style.setProperty("--d", (i * 50) + "ms");
-    else tile.style.animation = "none";
-
-    const catHref = "#/c/" + encodeURIComponent(cat.id);
-    const hit = el("a", "cat-tile-hit");
-    hit.href = catHref;
-    hit.setAttribute("aria-hidden", "true");
-    hit.tabIndex = -1;
-    tile.appendChild(hit);
-
-    const head = el("div", "cat-tile-head");
-    const title = el("h2");
-    const titleLink = el("a", "cat-link", cat.name);
-    titleLink.href = catHref;
-    title.appendChild(titleLink);
-    head.appendChild(title);
-    head.appendChild(countBadge(publishedItems(cat).length));
-    tile.appendChild(head);
-    tile.appendChild(el("p", "cat-tile-desc", cat.description || ""));
-
-    const preview = el("ul", "cat-preview");
-    const recents = recentItems(cat, 3);
-    if (!recents.length) {
-      preview.appendChild(el("li", "cat-preview-empty", "还没有条目"));
-    } else {
-      recents.forEach(function (item) {
-        const li = el("li");
-        const a = el("a", "", item.title);
-        a.href = "#/i/" + encodeURIComponent(itemId(item, cat));
-        li.appendChild(a);
-        if (item.updated) li.appendChild(el("span", "cat-preview-date", formatDate(item.updated)));
-        preview.appendChild(li);
+  function categoryHint(cat, count) {
+    const seen = [];
+    publishedItems(cat).forEach(function (item) {
+      (item.tags || []).forEach(function (tag) {
+        const t = String(tag || "").trim();
+        if (t && seen.indexOf(t) === -1) seen.push(t);
       });
+    });
+    if (seen.length) return seen.slice(0, 3).join(" · ");
+    return "共 " + count + " 条";
+  }
+
+  function renderCategoryIcon(cat) {
+    const symbolId = cat && cat.icon ? "i-" + String(cat.icon) : "";
+    if (symbolId && document.getElementById(symbolId)) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "cat-entry-icon");
+      svg.setAttribute("aria-hidden", "true");
+      svg.setAttribute("focusable", "false");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("width", "22");
+      svg.setAttribute("height", "22");
+      const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+      use.setAttribute("href", "#" + symbolId);
+      use.setAttributeNS("http://www.w3.org/1999/xlink", "href", "#" + symbolId);
+      svg.appendChild(use);
+      return svg;
     }
-    tile.appendChild(preview);
-    return tile;
+    const name = cat && cat.name ? String(cat.name) : "";
+    const glyph = el("span", "cat-entry-glyph", name.charAt(0) || "?");
+    glyph.setAttribute("aria-hidden", "true");
+    return glyph;
+  }
+
+  function renderCatEntry(cat, i, animate) {
+    const count = publishedItems(cat).length;
+    const card = el("a", "cat-entry");
+    card.href = "#/c/" + encodeURIComponent(cat.id);
+    if (animate && !reduced) card.style.setProperty("--d", (i * 50) + "ms");
+    else card.style.animation = "none";
+
+    const title = el("span", "cat-entry-title");
+    title.appendChild(renderCategoryIcon(cat));
+    title.appendChild(el("span", "cat-entry-name", cat.name));
+    card.appendChild(title);
+    card.appendChild(el("span", "cat-entry-count", count + " 条"));
+    card.appendChild(el("span", "cat-entry-hint", categoryHint(cat, count)));
+    return card;
   }
 
   // opts.linkedTitle：分类名做成链接（首页搜索结果）
@@ -522,21 +528,53 @@
     return p;
   }
 
-  function renderPendingTile(cats, i, animate) {
-    const tile = el("article", "cat-tile is-pending");
-    if (animate && !reduced) tile.style.setProperty("--d", (i * 50) + "ms");
-    else tile.style.animation = "none";
-    tile.appendChild(el("h2", "", "待收录"));
-    const list = el("ul", "pending-list");
-    cats.forEach(function (cat) {
-      const li = el("li");
+  function renderPendingLine(cats) {
+    const p = el("p", "pending-line");
+    p.appendChild(document.createTextNode("待收录："));
+    cats.forEach(function (cat, i) {
+      if (i) p.appendChild(document.createTextNode("、"));
       const a = el("a", "", cat.name);
       a.href = "#/c/" + encodeURIComponent(cat.id);
+      p.appendChild(a);
+    });
+    return p;
+  }
+
+  function renderRecent(animate) {
+    const all = [];
+    categories.forEach(function (cat) {
+      publishedItems(cat).forEach(function (item) {
+        all.push(item);
+      });
+    });
+    const items = sortItems(all).slice(0, 8);
+    if (!items.length) return null;
+
+    const section = el("section", "recent-block");
+    if (animate && !reduced) section.style.setProperty("--d", "80ms");
+    else section.style.animation = "none";
+
+    const head = el("div", "group-head");
+    head.appendChild(el("h2", "", "最近加入"));
+    section.appendChild(head);
+
+    const list = el("ul", "recent-list");
+    items.forEach(function (item) {
+      const found = findItem(itemId(item));
+      const cat = found ? found.cat : null;
+      const li = el("li");
+      const a = el("a", "recent-item");
+      a.href = "#/i/" + encodeURIComponent(itemId(item, cat));
+      if (cat && cat.name) a.appendChild(el("span", "recent-cat", cat.name));
+      const main = el("span", "recent-main");
+      main.appendChild(el("span", "recent-title", item.title));
+      if (item.updated) main.appendChild(el("span", "recent-date", formatDate(item.updated)));
+      a.appendChild(main);
       li.appendChild(a);
       list.appendChild(li);
     });
-    tile.appendChild(list);
-    return tile;
+    section.appendChild(list);
+    return section;
   }
 
   function renderHome(animate) {
@@ -548,16 +586,16 @@
     if (!query) {
       const filled = categories.filter(function (cat) { return publishedItems(cat).length; });
       const pending = categories.filter(function (cat) { return !publishedItems(cat).length; });
-      if (filled.length || pending.length) {
-        const grid = el("div", "cat-grid");
+      if (filled.length) {
+        const grid = el("div", "cat-entry-grid");
         filled.forEach(function (cat, i) {
-          grid.appendChild(renderCatTile(cat, i, animate));
+          grid.appendChild(renderCatEntry(cat, i, animate));
         });
-        if (pending.length) {
-          grid.appendChild(renderPendingTile(pending, filled.length, animate));
-        }
         mainEl.appendChild(grid);
       }
+      if (pending.length) mainEl.appendChild(renderPendingLine(pending));
+      const recent = renderRecent(animate);
+      if (recent) mainEl.appendChild(recent);
       return;
     }
     let found = 0;

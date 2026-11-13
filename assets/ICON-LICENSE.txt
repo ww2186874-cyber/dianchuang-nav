@@ -1,0 +1,3 @@
+首页分类图标取自 Lucide（CPU、Code、Book、Archive、Book Text、Wrench），已改为 24px 线框并内联于 index.html。
+Lucide 图标由 Lucide Contributors 以 MIT License 发布：
+https://lucide.dev/license

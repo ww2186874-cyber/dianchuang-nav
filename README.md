@@ -16,6 +16,8 @@
 
 分类 id：`hardware`（硬件 / 板子）、`software`（软件 / 代码）、`learning`（学习路线）、`heritage`（课业传承）、`docs`（器件手册）、`tools`（在线工具）。
 
+每个分类可以写 `icon` 字段，用于首页入口卡片的线框图标，取值：`chip`（硬件 / 板子）、`code`（软件 / 代码）、`book`（学习路线）、`archive`（课业传承）、`manual`（器件手册）、`tool`（在线工具）。图标是内联在 `index.html` 里的 SVG sprite（`#i-chip` 等），来源与许可见 `assets/ICON-LICENSE.txt`。缺了 `icon` 或对不上 sprite 时，首页改用分类名的首字字块，页面仍可正常显示。
+
 「硬件 / 板子」放实验室自己画的板子及配套程序，外购工具和厂家手册放到「器件手册」。平时上课、由学长学姐整理传下来的资料放到「课业传承」。实验室做的、可在网页里直接打开使用的小工具放到「在线工具」；体积较小的完整网页可以放在 `tools/` 目录，条目的 `url` 填相对路径，例如 `tools/mspm0-pin-planner.html`，不要把这类工具的源码提交进本仓库。
 
 ## 本地预览
@@ -51,7 +53,7 @@
 
 ## 改样式、脚本或数据
 
-`index.html` 里引用的 `style.css`、`links.js`、`app.js` 共用同一个版本号参数（当前 `?v=23`）。改过这三个文件中的任意一个，就把这个数字加一，免得浏览器继续用旧缓存。`og:image` 和 `twitter:image` 的地址也要用同一个 `?v=N`（例如 `assets/og-image.png?v=23`），换图后社交平台才更可能刷新缓存。GitHub Pages 自带的缓存是 10 分钟。
+`index.html` 里引用的 `style.css`、`links.js`、`app.js` 共用同一个版本号参数（当前 `?v=24`）。改过这三个文件中的任意一个，就把这个数字加一，免得浏览器继续用旧缓存。`og:image` 和 `twitter:image` 的地址也要用同一个 `?v=N`（例如 `assets/og-image.png?v=23`），换图后社交平台才更可能刷新缓存。GitHub Pages 自带的缓存是 10 分钟。
 
 如果改了站点名称或副标题，请同时重新生成 `assets/og-image.png`：深色背景 `#0c0a0a`，协会标志、标题、组织名和副标题，尺寸 1200×630。
 

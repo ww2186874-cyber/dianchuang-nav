@@ -11,6 +11,11 @@
  *   docs      器件手册 —— 器件与外购工具手册、赛事与实验室资料。
  *   tools      在线工具 —— 实验室做的、可在网页里直接打开使用的小工具。
  *
+ * 分类 icon（首页入口卡片用，取值对应 index.html 里的 SVG sprite）：
+ *   chip 硬件 / 板子，code 软件 / 代码，book 学习路线，
+ *   archive 课业传承，manual 器件手册，tool 在线工具。
+ *   缺省或对不上 sprite 时，首页改用分类名首字字块，不阻塞渲染。
+ *
  * 字段说明：
  *   id          稳定编号（必填，详情页地址是 #/i/<id>）
  *   title       名称（必填）
@@ -55,6 +60,7 @@ window.NAV_DATA = {
   categories: [
     {
       id: "hardware",
+      icon: "chip",
       name: "硬件 / 板子",
       description: "实验室自己画的板子及配套程序；外购工具和厂家手册放在「器件手册」。",
       empty: "还没有板子，欢迎补充。",
@@ -62,6 +68,7 @@ window.NAV_DATA = {
     },
     {
       id: "software",
+      icon: "code",
       name: "软件 / 代码",
       description: "自己写的、可复用的代码与工程。",
       empty: "还没有代码，欢迎补充。",
@@ -69,6 +76,7 @@ window.NAV_DATA = {
     },
     {
       id: "learning",
+      icon: "book",
       name: "学习路线",
       description: "大家实际看过、觉得靠谱的课与路线。",
       empty: "还没有课程或路线，欢迎补充。",
@@ -76,6 +84,7 @@ window.NAV_DATA = {
     },
     {
       id: "heritage",
+      icon: "archive",
       name: "课业传承",
       description: "学长学姐整理并传下来的上课资料，方便后来的同学接着用、接着补。",
       empty: "还没有资料，欢迎补充。",
@@ -123,6 +132,7 @@ window.NAV_DATA = {
     },
     {
       id: "docs",
+      icon: "manual",
       name: "器件手册",
       description: "器件与外购工具的手册，以及赛事与实验室资料。",
       empty: "还没有手册，欢迎补充。",
@@ -148,6 +158,7 @@ window.NAV_DATA = {
     },
     {
       id: "tools",
+      icon: "tool",
       name: "在线工具",
       description: "实验室做的、可在网页里直接打开使用的小工具。",
       empty: "还没有工具，欢迎补充。",
