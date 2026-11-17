@@ -6,9 +6,6 @@
     return;
   }
 
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const finePointer = window.matchMedia("(pointer: fine)").matches;
-
   const site = data.site || {};
   const categories = Array.isArray(data.categories) ? data.categories : [];
 
@@ -27,6 +24,24 @@
   if (site.title) titleEl.textContent = site.title;
   if (site.subtitle) subEl.textContent = site.subtitle;
   if (site.notice) noticeEl.textContent = site.notice;
+
+  // 站内用 hash 路由；跳过导航链接不能把地址改成 #main。
+  // main 聚焦时默认会把内容顶到视口最上方，被粘性工具条盖住，所以自己算滚动位置。
+  const skipLink = document.querySelector(".skip-link");
+  if (skipLink) {
+    skipLink.addEventListener("click", function (e) {
+      e.preventDefault();
+      try {
+        mainEl.focus({ preventScroll: true });
+      } catch (err) {
+        mainEl.focus();
+      }
+      const toolbar = document.querySelector(".toolbar");
+      const offset = (toolbar ? toolbar.getBoundingClientRect().height : 0) + 12;
+      const top = window.scrollY + mainEl.getBoundingClientRect().top - offset;
+      window.scrollTo(0, Math.max(0, top));
+    });
+  }
 
   function packItems(item) {
     return ((item && item.pack) || []).filter(function (part) {
@@ -98,12 +113,20 @@
     if (!hash) return { name: "home" };
     const parts = hash.split("/").filter(Boolean);
     if (parts[0] === "c" && parts[1]) {
-      return { name: "category", id: decodeURIComponent(parts[1]) };
+      return { name: "category", id: safeDecode(parts[1]) };
     }
     if (parts[0] === "i" && parts[1]) {
-      return { name: "item", id: decodeURIComponent(parts[1]) };
+      return { name: "item", id: safeDecode(parts[1]) };
     }
     return { name: "home" };
+  }
+
+  function safeDecode(value) {
+    try {
+      return decodeURIComponent(value);
+    } catch (err) {
+      return value;
+    }
   }
 
   const total = categories.reduce(function (n, cat) {
@@ -144,33 +167,44 @@
     chipsEl.classList.toggle("has-more-right", max - chipsEl.scrollLeft > 2);
   }
 
+  // 分类标签下的红色下划线：跟随当前分类，宽度与横向滚动位置一起算
   function moveInk() {
     if (!inkEl) return;
     const active = chipsEl.querySelector(".chip.is-active");
-    if (!active) return;
+    if (!active) {
+      inkEl.style.width = "0px";
+      return;
+    }
     const nav = chipsEl.getBoundingClientRect();
     const r = active.getBoundingClientRect();
     inkEl.style.width = r.width + "px";
-    inkEl.style.height = r.height + "px";
     inkEl.style.transform =
       "translate(" +
       (r.left - nav.left + chipsEl.scrollLeft) + "px, " +
-      (r.top - nav.top + chipsEl.scrollTop) + "px)";
+      (r.bottom - nav.top + chipsEl.scrollTop - 2) + "px)";
   }
 
-  function makeChip(href, id, text, active) {
+  function makeChip(href, id, text, active, index) {
     const btn = document.createElement("a");
     btn.className = "chip" + (active ? " is-active" : "");
     btn.href = href;
     btn.setAttribute("data-id", id);
     btn.draggable = false;
-    btn.textContent = text;
+    const num = document.createElement("span");
+    num.className = "chip-num";
+    num.setAttribute("aria-hidden", "true");
+    num.textContent = index;
+    btn.appendChild(num);
+    const label = document.createElement("span");
+    label.className = "chip-label";
+    label.textContent = text;
+    btn.appendChild(label);
     return btn;
   }
 
-  chipsEl.appendChild(makeChip("#/", "", "全部", true));
-  categories.forEach(function (cat) {
-    chipsEl.appendChild(makeChip("#/c/" + encodeURIComponent(cat.id), cat.id, cat.name, false));
+  chipsEl.appendChild(makeChip("#/", "", "全部", true, "00"));
+  categories.forEach(function (cat, i) {
+    chipsEl.appendChild(makeChip("#/c/" + encodeURIComponent(cat.id), cat.id, cat.name, false, pad2(i + 1)));
   });
 
   // 链接在鼠标微动时会被浏览器当成拖拽，从而吃掉 click。禁止拖拽，并在小位移内仍按点击切换。
@@ -203,8 +237,21 @@
   requestAnimationFrame(function () {
     requestAnimationFrame(moveInk);
   });
+  // 字体加载后标签宽度会变，再对一次下划线
+  if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === "function") {
+    document.fonts.ready.then(function () {
+      moveInk();
+      updateChipFade();
+    }).catch(function () {});
+  }
+  let lastChipWidth = window.innerWidth;
   window.addEventListener("resize", function () {
     moveInk();
+    // 只在窗口宽度变化时重新对中当前分类，避免移动端键盘弹起时无谓滚动
+    if (window.innerWidth !== lastChipWidth) {
+      lastChipWidth = window.innerWidth;
+      revealActiveChip();
+    }
     updateChipFade();
   });
   chipsEl.addEventListener("scroll", updateChipFade, { passive: true });
@@ -213,15 +260,22 @@
   // 详情页里开始打字时跳回首页，在全部分类中显示结果
   let searchFromItem = false;
 
+  function syncSearchState() {
+    const hasValue = !!qEl.value;
+    qClearEl.hidden = !hasValue;
+    const box = qEl.closest(".search");
+    if (box) box.classList.toggle("has-query", hasValue);
+  }
+
   function onQueryChange() {
-    qClearEl.hidden = !qEl.value;
+    syncSearchState();
     const route = parseRoute();
     if (route.name === "item" && norm(qEl.value)) {
       searchFromItem = true;
       location.hash = "#/";
       return;
     }
-    render({ animate: false });
+    render();
   }
 
   function clearQuery() {
@@ -232,7 +286,7 @@
   }
 
   qEl.addEventListener("input", onQueryChange);
-  qClearEl.hidden = !qEl.value;
+  syncSearchState();
   qEl.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
       if (qEl.value) {
@@ -342,37 +396,21 @@
     return String(value);
   }
 
-  function bindTilt(card) {
-    if (reduced || !finePointer) return;
-    card.addEventListener("pointermove", function (e) {
-      const r = card.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width;
-      const y = (e.clientY - r.top) / r.height;
-      card.style.setProperty("--rx", ((0.5 - y) * 3).toFixed(2) + "deg");
-      card.style.setProperty("--ry", ((x - 0.5) * 4).toFixed(2) + "deg");
-    });
-    card.addEventListener("pointerleave", function () {
-      card.style.setProperty("--rx", "0deg");
-      card.style.setProperty("--ry", "0deg");
-    });
-  }
-
   function backLink(href, text) {
     const a = el("a", "back", text);
     a.href = href;
     return a;
   }
 
-  function renderCard(item, cat, i, animate, query) {
+  function renderCard(item, cat, i, query) {
     const id = itemId(item, cat);
     const detail = "#/i/" + encodeURIComponent(id);
     const card = el("a", "card");
     card.href = detail;
-    if (animate && !reduced) {
-      card.style.setProperty("--d", (80 + i * 55) + "ms");
-    } else {
-      card.style.animation = "none";
-    }
+
+    const ref = el("span", "card-ref", String(cat.id || "").toUpperCase() + " / " + pad2(i + 1));
+    ref.setAttribute("aria-hidden", "true");
+    card.appendChild(ref);
 
     const h3 = el("h3");
     appendHighlighted(h3, item.title, query);
@@ -402,7 +440,6 @@
       footer.appendChild(el("span", "updated", "更新于 " + formatDate(item.updated)));
     }
     if (footer.children.length) card.appendChild(footer);
-    bindTilt(card);
     return card;
   }
 
@@ -430,8 +467,8 @@
       svg.setAttribute("aria-hidden", "true");
       svg.setAttribute("focusable", "false");
       svg.setAttribute("viewBox", "0 0 24 24");
-      svg.setAttribute("width", "22");
-      svg.setAttribute("height", "22");
+      svg.setAttribute("width", "21");
+      svg.setAttribute("height", "21");
       const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
       use.setAttribute("href", "#" + symbolId);
       use.setAttributeNS("http://www.w3.org/1999/xlink", "href", "#" + symbolId);
@@ -444,34 +481,39 @@
     return glyph;
   }
 
-  function renderCatEntry(cat, i, animate) {
+  function renderCatEntry(cat) {
     const count = publishedItems(cat).length;
     const card = el("a", "cat-entry");
     card.href = "#/c/" + encodeURIComponent(cat.id);
-    if (animate && !reduced) card.style.setProperty("--d", (i * 50) + "ms");
-    else card.style.animation = "none";
+
+    const top = el("span", "cat-entry-top");
+    top.appendChild(el("span", "cat-entry-num", pad2(categories.indexOf(cat) + 1)));
+    top.appendChild(el("span", "cat-entry-count", count + " 条"));
+    card.appendChild(top);
 
     const title = el("span", "cat-entry-title");
     title.appendChild(renderCategoryIcon(cat));
     title.appendChild(el("span", "cat-entry-name", cat.name));
     card.appendChild(title);
-    card.appendChild(el("span", "cat-entry-count", count + " 条"));
     card.appendChild(el("span", "cat-entry-hint", categoryHint(cat, count)));
     return card;
   }
 
   // opts.linkedTitle：分类名做成链接（首页搜索结果）
-  // opts.back：分类页，返回链接放在面板顶部
-  function renderGroup(cat, items, animate, opts) {
+  // opts.back：分类页，返回链接和分类编号放在顶部
+  function renderGroup(cat, items, opts) {
     opts = opts || {};
     const linkedTitle = !!opts.linkedTitle;
-    const section = el("section", "group");
-    if (animate && !reduced) {
-      section.style.setProperty("--d", "0ms");
-    } else {
-      section.style.animation = "none";
+    const section = el("section", opts.back ? "group group-page" : "group");
+    if (opts.back) {
+      section.appendChild(backLink("#/", "返回首页"));
+      const index = categories.indexOf(cat);
+      section.appendChild(el(
+        "p",
+        "group-kicker",
+        "INDEX / " + pad2(index + 1) + " · " + String(cat.id || "").toUpperCase()
+      ));
     }
-    if (opts.back) section.appendChild(backLink("#/", "返回首页"));
 
     const head = el("div", "group-head");
     const h2 = el("h2");
@@ -493,15 +535,13 @@
       const emptyText = query
         ? "没有匹配的条目。"
         : (cat.empty || "还没有条目，欢迎补充。");
-      const empty = el("p", "empty", emptyText);
-      if (!animate || reduced) empty.style.animation = "none";
-      section.appendChild(empty);
+      section.appendChild(el("p", "empty", emptyText));
       return section;
     }
 
     const grid = el("div", "grid");
     items.forEach(function (item, i) {
-      grid.appendChild(renderCard(item, cat, i, animate, query));
+      grid.appendChild(renderCard(item, cat, i, query));
     });
     section.appendChild(grid);
     return section;
@@ -512,19 +552,25 @@
     document.title = page ? page + " · " + base : base;
   }
 
-  function searchHint(scope, raw, found, prefix) {
+  function searchHint(scope, raw, found, prefix, forceClear) {
     const p = el("p", "search-hint");
-    p.setAttribute("role", "status");
-    p.appendChild(document.createTextNode((prefix || "") + "在" + scope + "中搜索「"));
-    p.appendChild(el("b", "", raw));
-    p.appendChild(document.createTextNode("」 · 共 " + found + " 条 · "));
-    const clear = el("button", "search-hint-clear", "清除");
-    clear.type = "button";
-    clear.addEventListener("click", function () {
-      clearQuery();
-      qEl.focus();
-    });
-    p.appendChild(clear);
+    // 只把文字放进 live region，清除按钮留在外面，避免读屏把交互控件当状态播报
+    const status = el("span", "search-hint-text");
+    status.setAttribute("role", "status");
+    status.appendChild(document.createTextNode((prefix || "") + "在" + scope + "中搜索「"));
+    status.appendChild(el("b", "", raw));
+    status.appendChild(document.createTextNode("」 · 共 " + found + " 条 · "));
+    p.appendChild(status);
+    // 首页零结果由下方 empty-state 提供主按钮；分类页没有 empty-state，由这里提供清除入口
+    if (found > 0 || forceClear) {
+      const clear = el("button", "search-hint-clear", "清除");
+      clear.type = "button";
+      clear.addEventListener("click", function () {
+        clearQuery();
+        qEl.focus();
+      });
+      p.appendChild(clear);
+    }
     return p;
   }
 
@@ -540,7 +586,7 @@
     return p;
   }
 
-  function renderRecent(animate) {
+  function renderRecent() {
     const all = [];
     categories.forEach(function (cat) {
       publishedItems(cat).forEach(function (item) {
@@ -551,10 +597,9 @@
     if (!items.length) return null;
 
     const section = el("section", "recent-block");
-    if (animate && !reduced) section.style.setProperty("--d", "80ms");
-    else section.style.animation = "none";
 
-    const head = el("div", "group-head");
+    const head = el("div", "sec-head");
+    head.appendChild(el("span", "sec-kicker", "RECENT"));
     head.appendChild(el("h2", "", "最近加入"));
     section.appendChild(head);
 
@@ -565,11 +610,11 @@
       const li = el("li");
       const a = el("a", "recent-item");
       a.href = "#/i/" + encodeURIComponent(itemId(item, cat));
-      if (cat && cat.name) a.appendChild(el("span", "recent-cat", cat.name));
-      const main = el("span", "recent-main");
-      main.appendChild(el("span", "recent-title", item.title));
-      if (item.updated) main.appendChild(el("span", "recent-date", formatDate(item.updated)));
-      a.appendChild(main);
+      const meta = el("span", "recent-meta");
+      if (cat && cat.name) meta.appendChild(el("span", "recent-cat", cat.name));
+      if (item.updated) meta.appendChild(el("span", "recent-date", formatDate(item.updated)));
+      a.appendChild(meta);
+      a.appendChild(el("span", "recent-title", item.title));
       li.appendChild(a);
       list.appendChild(li);
     });
@@ -577,25 +622,42 @@
     return section;
   }
 
-  function renderHome(animate) {
-    setDocumentTitle("");
+  function renderHome() {
     const raw = qEl.value.trim();
     const query = norm(raw);
+    setDocumentTitle(query ? "搜索：" + raw : "");
     const fromItem = searchFromItem;
     searchFromItem = false;
     if (!query) {
       const filled = categories.filter(function (cat) { return publishedItems(cat).length; });
       const pending = categories.filter(function (cat) { return !publishedItems(cat).length; });
+      const layout = el("div", "home-layout");
+      const mainCol = el("div", "home-main");
       if (filled.length) {
+        const block = el("section", "index-block");
+        const head = el("div", "sec-head");
+        head.appendChild(el("span", "sec-kicker", "INDEX"));
+        head.appendChild(el("h2", "", "分类索引"));
+        head.appendChild(el("span", "sec-meta", pad2(filled.length) + " / " + pad2(categories.length) + " 个分类"));
+        block.appendChild(head);
         const grid = el("div", "cat-entry-grid");
-        filled.forEach(function (cat, i) {
-          grid.appendChild(renderCatEntry(cat, i, animate));
+        filled.forEach(function (cat) {
+          grid.appendChild(renderCatEntry(cat));
         });
-        mainEl.appendChild(grid);
+        block.appendChild(grid);
+        mainCol.appendChild(block);
       }
-      if (pending.length) mainEl.appendChild(renderPendingLine(pending));
-      const recent = renderRecent(animate);
-      if (recent) mainEl.appendChild(recent);
+      if (pending.length) mainCol.appendChild(renderPendingLine(pending));
+      layout.appendChild(mainCol);
+      const recent = renderRecent();
+      if (recent) {
+        layout.appendChild(recent);
+        layout.classList.add("has-side");
+      }
+      if (!mainCol.children.length && !recent) {
+        layout.appendChild(el("p", "empty", "还没有条目，欢迎补充。"));
+      }
+      mainEl.appendChild(layout);
       return;
     }
     let found = 0;
@@ -606,24 +668,34 @@
       }));
       if (!items.length) return;
       found += items.length;
-      groups.push(renderGroup(cat, items, animate, { linkedTitle: true }));
+      groups.push(renderGroup(cat, items, { linkedTitle: true }));
     });
     mainEl.appendChild(searchHint("全部分类", raw, found, fromItem ? "已回到首页，" : ""));
     groups.forEach(function (g) { mainEl.appendChild(g); });
     if (!groups.length) {
-      mainEl.appendChild(el("p", "empty", "没有匹配的条目。"));
+      const empty = el("div", "empty-state");
+      empty.appendChild(el("h3", "", "没有匹配的条目"));
+      empty.appendChild(el("p", "", "换一个更短的关键词试试，或清除搜索查看全部分类。"));
+      const clear = el("button", "btn-ghost", "清除搜索");
+      clear.type = "button";
+      clear.addEventListener("click", function () {
+        clearQuery();
+        qEl.focus();
+      });
+      empty.appendChild(clear);
+      mainEl.appendChild(empty);
     }
   }
 
-  function renderCategory(cat, animate) {
-    setDocumentTitle(cat.name);
+  function renderCategory(cat) {
     const raw = qEl.value.trim();
     const query = norm(raw);
+    setDocumentTitle(query ? cat.name + " · 搜索：" + raw : cat.name);
     const items = sortItems(publishedItems(cat).filter(function (item) {
       return matches(item, cat, query);
     }));
-    if (query) mainEl.appendChild(searchHint("「" + cat.name + "」", raw, items.length));
-    mainEl.appendChild(renderGroup(cat, items, animate, { back: true }));
+    if (query) mainEl.appendChild(searchHint("「" + cat.name + "」", raw, items.length, "", true));
+    mainEl.appendChild(renderGroup(cat, items, { back: true }));
   }
 
   // size 可以写成 "8.2 MB" 这样的文字，也可以直接写字节数
@@ -703,15 +775,13 @@
     return row;
   }
 
-  function renderItem(found, animate) {
+  function renderItem(found) {
     const item = found.item;
     const cat = found.cat;
     setDocumentTitle(item.title);
     renderStats();
 
     const page = el("article", "detail");
-    if (animate && !reduced) page.style.setProperty("--d", "0ms");
-    else page.style.animation = "none";
 
     const topRow = el("div", "detail-top");
     topRow.appendChild(backLink("#/c/" + encodeURIComponent(cat.id), "返回" + cat.name));
@@ -719,6 +789,8 @@
     page.appendChild(topRow);
 
     const kicker = el("p", "detail-kicker");
+    kicker.appendChild(el("span", "", String(cat.id || "").toUpperCase()));
+    kicker.appendChild(document.createTextNode(" / "));
     const catLink = el("a", "", cat.name);
     catLink.href = "#/c/" + encodeURIComponent(cat.id);
     kicker.appendChild(catLink);
@@ -763,8 +835,8 @@
       return bits.filter(Boolean).join(" · ");
     }
 
-    function entryLink(label, url, note) {
-      const a = el("a", "entry");
+    function entryLink(label, url, note, primary) {
+      const a = el("a", primary ? "entry is-primary" : "entry");
       a.href = url;
       a.rel = "noopener noreferrer";
       a.target = "_blank";
@@ -815,7 +887,7 @@
       if (mainNote) mainBits.push(mainNote);
       if (item.extractCode) mainBits.push("提取码 " + item.extractCode);
       if (item.expiry) mainBits.push(item.expiry);
-      list.appendChild(entryLink(item.urlLabel || "资料下载", item.url, mainBits.join(" · ")));
+      list.appendChild(entryLink(item.urlLabel || "资料下载", item.url, mainBits.join(" · "), true));
       hasEntries = true;
     }
 
@@ -830,58 +902,75 @@
     mainEl.appendChild(page);
   }
 
-  function renderMissing(kind, animate) {
+  function renderMissing(kind) {
     setDocumentTitle("未找到");
     renderStats();
     const page = el("div", "page-head");
-    if (!animate || reduced) page.style.animation = "none";
     page.appendChild(backLink("#/", "返回首页"));
+    page.appendChild(el("p", "group-kicker", kind === "category" ? "NOT FOUND / CATEGORY" : "NOT FOUND / ITEM"));
     page.appendChild(el("h2", "", kind === "category" ? "没有这个分类。" : "没有这条目。"));
     page.appendChild(el("p", "group-desc", "可能是编号改过了，回首页找找看。"));
     mainEl.appendChild(page);
   }
 
-  let firstPaint = true;
   let packFocus = null;
 
   function focusPack() {
     const target = packFocus;
     packFocus = null;
     if (!target) return false;
+    try {
+      target.focus({ preventScroll: true });
+    } catch (err) {
+      target.focus();
+    }
     target.scrollIntoView({ block: "center" });
     return true;
   }
 
-  function render(opts) {
+  function render() {
     const route = parseRoute();
-    const animate = firstPaint || (opts && opts.animate);
-    firstPaint = false;
     mainEl.innerHTML = "";
     packFocus = null;
 
+    let view = route.name;
+    if (route.name === "home" && norm(qEl.value)) view = "search";
+    mainEl.dataset.view = view;
     document.body.classList.toggle("is-subpage", route.name !== "home");
 
     if (route.name === "category") {
       const cat = findCategory(route.id);
       setActiveChip(cat ? cat.id : route.id);
-      if (!cat) renderMissing("category", animate);
-      else renderCategory(cat, animate);
+      if (!cat) renderMissing("category");
+      else renderCategory(cat);
     } else if (route.name === "item") {
       const found = findItem(route.id);
       setActiveChip(found ? found.cat.id : "");
-      if (!found) renderMissing("item", animate);
-      else renderItem(found, animate);
+      if (!found) renderMissing("item");
+      else renderItem(found);
     } else {
       setActiveChip("");
-      renderHome(animate);
+      renderHome();
     }
 
     requestAnimationFrame(moveInk);
   }
 
   window.addEventListener("hashchange", function () {
-    render({ animate: true });
-    if (!focusPack()) window.scrollTo(0, 0);
+    const activeBefore = document.activeElement;
+    const focusWasInMain = !!(activeBefore && activeBefore !== document.body && mainEl.contains(activeBefore));
+    render();
+    if (!focusPack()) {
+      window.scrollTo(0, 0);
+      // 卡片被重新渲染后焦点会掉到 body，交给主区域继续键盘浏览
+      if (focusWasInMain) {
+        try {
+          mainEl.focus({ preventScroll: true });
+        } catch (err) {
+          mainEl.focus();
+        }
+      }
+    }
     onScroll();
   });
 
