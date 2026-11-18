@@ -1,736 +1,550 @@
+/* 电创导航 · 命令面板 + 三栏资料工作台 —— 交互逻辑（正式首页）
+ * 数据来自根目录 data/links.js（window.NAV_DATA，唯一真实来源）。
+ * 工作台状态：{ cat: 分类 id | ""(全部), q: 查询词, sel: 选中条目 id | null }
+ * 命令面板是全局搜索入口：Enter/点选 → 关闭面板并把 {cat,q,sel} 回写工作台；
+ *   Ctrl/Cmd+Enter → 直接新标签打开主链接（不改工作台状态）；
+ *   Esc → 取消面板，工作台状态与焦点原样恢复。
+ * hash 路由：#/ 全部；#/c/<cat> 分类；#/i/<id> 条目（含资料包 id）；?q=<查询> 快照。
+ */
 (function () {
-  const data = window.NAV_DATA;
+  "use strict";
+
+  var data = window.NAV_DATA;
   if (!data) {
-    document.getElementById("main").innerHTML =
-      "<p class=\"empty\">没有读到条目数据，请确认 data/links.js 存在。</p>";
+    document.getElementById("result-list").innerHTML =
+      '<li class="empty-block"><h2>没有读到数据</h2><p>请确认 data/links.js 存在且先于本脚本加载。</p></li>';
     return;
   }
 
-  const site = data.site || {};
-  const categories = Array.isArray(data.categories) ? data.categories : [];
+  var site = data.site || {};
+  var categories = Array.isArray(data.categories) ? data.categories : [];
 
-  const orgEl = document.getElementById("org");
-  const titleEl = document.getElementById("title");
-  const subEl = document.getElementById("subtitle");
-  const noticeEl = document.getElementById("notice");
-  const statsEl = document.getElementById("stats");
-  const chipsEl = document.getElementById("chips");
-  const inkEl = document.getElementById("chip-ink");
-  const mainEl = document.getElementById("main");
-  const qEl = document.getElementById("q");
-  const qClearEl = document.getElementById("q-clear");
+  /* ── DOM 引用 ── */
+  function $(id) { return document.getElementById(id); }
+  var body = document.body;
+  var triggerEl = $("open-palette"), triggerLabel = $("trigger-label"), qClear = $("q-clear");
+  var catListEl = $("cat-list");
+  var outlineKicker = $("outline-kicker"), outlineBody = $("outline-body");
+  var resultsKicker = $("results-kicker"), resultsTitle = $("results-title");
+  var resultsCount = $("results-count");
+  var searchStatus = $("search-status");
+  var resultListEl = $("result-list"), resultsEmpty = $("results-empty");
+  var resultsScroll = $("results-scroll");
+  var detailBody = $("detail-body"), detailScroll = $("detail-scroll");
+  var detailKicker = $("detail-kicker");
+  var prevBtn = $("prev-item"), nextBtn = $("next-item"), stepPos = $("step-pos");
+  var detailClose = $("detail-close"), detailBack = $("detail-back");
+  var navToggle = $("nav-toggle"), sidebarClose = $("sidebar-close"), scrim = $("scrim");
+  var sidebarEl = $("sidebar");
+  var overlay = $("palette-overlay"), palette = $("palette");
+  var pInput = $("palette-input"), pList = $("palette-list"), pEmpty = $("palette-empty");
+  var pCount = $("palette-count"), pFilters = $("palette-filters"), pClose = $("palette-close");
+  var toastEl = $("toast");
 
-  if (site.org) orgEl.textContent = site.org;
-  if (site.title) titleEl.textContent = site.title;
-  if (site.subtitle) subEl.textContent = site.subtitle;
-  if (site.notice) noticeEl.textContent = site.notice;
+  var mqMobile = window.matchMedia("(max-width: 900px)");
+  var mqReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function isMobile() { return mqMobile.matches; }
 
-  // 站内用 hash 路由；跳过导航链接不能把地址改成 #main。
-  // main 聚焦时默认会把内容顶到视口最上方，被粘性工具条盖住，所以自己算滚动位置。
-  const skipLink = document.querySelector(".skip-link");
-  if (skipLink) {
-    skipLink.addEventListener("click", function (e) {
-      e.preventDefault();
-      try {
-        mainEl.focus({ preventScroll: true });
-      } catch (err) {
-        mainEl.focus();
-      }
-      const toolbar = document.querySelector(".toolbar");
-      const offset = (toolbar ? toolbar.getBoundingClientRect().height : 0) + 12;
-      const top = window.scrollY + mainEl.getBoundingClientRect().top - offset;
-      window.scrollTo(0, Math.max(0, top));
-    });
-  }
-
+  /* ── 数据整理 ── */
   function packItems(item) {
-    return ((item && item.pack) || []).filter(function (part) {
-      return part && part.title && part.url;
-    });
+    return ((item && item.pack) || []).filter(function (p) { return p && p.title && p.url; });
   }
-
-  function isCollection(item) {
-    return !!(item && item.title && packItems(item).length);
+  function isCollection(item) { return !!(item && item.title && packItems(item).length); }
+  function published(cat) {
+    return (cat.items || []).filter(function (it) { return it && it.title && (it.url || isCollection(it)); });
   }
-
-  function publishedItems(category) {
-    return (category.items || []).filter(function (item) {
-      return item && item.title && (item.url || isCollection(item));
-    });
+  function itemId(it, cat) {
+    if (it && it.id) return String(it.id);
+    return (cat ? cat.id + "-" : "") + String(it && it.title ? it.title : "");
   }
-
-  // 统一排序：updated 倒序；同一天（或都没写日期）时，数据里排在后面的在前。
   function sortItems(items) {
-    return items.map(function (item, index) {
-      return { item: item, index: index };
-    }).sort(function (a, b) {
-      const da = a.item.updated || "";
-      const db = b.item.updated || "";
-      if (da !== db) return da < db ? 1 : -1;
-      return b.index - a.index;
-    }).map(function (row) { return row.item; });
+    return items.map(function (it, i) { return { it: it, i: i }; })
+      .sort(function (a, b) {
+        var da = a.it.updated || "", db = b.it.updated || "";
+        if (da !== db) return da < db ? 1 : -1;
+        return b.i - a.i;
+      }).map(function (r) { return r.it; });
   }
-
-  function pad2(n) {
-    return String(n).padStart(2, "0");
-  }
-
-  function itemId(item, cat) {
-    if (item && item.id) return String(item.id);
-    return (cat ? cat.id + "-" : "") + String(item && item.title ? item.title : "");
-  }
-
-  function findCategory(id) {
-    for (let i = 0; i < categories.length; i++) {
-      if (categories[i].id === id) return categories[i];
-    }
+  function findCat(id) {
+    for (var i = 0; i < categories.length; i++) if (categories[i].id === id) return categories[i];
     return null;
   }
-
   function findItem(id) {
-    for (let i = 0; i < categories.length; i++) {
-      const cat = categories[i];
-      const items = publishedItems(cat);
-      for (let j = 0; j < items.length; j++) {
-        const item = items[j];
-        if (itemId(item, cat) === id) return { item: item, cat: cat, partId: "" };
-        const parts = packItems(item);
-        for (let k = 0; k < parts.length; k++) {
-          if (itemId(parts[k], cat) === id) {
-            return { item: item, cat: cat, partId: id };
-          }
+    for (var i = 0; i < categories.length; i++) {
+      var cat = categories[i], items = published(cat);
+      for (var j = 0; j < items.length; j++) {
+        if (itemId(items[j], cat) === id) return { item: items[j], cat: cat, partId: "" };
+        var parts = packItems(items[j]);
+        for (var k = 0; k < parts.length; k++) {
+          if (itemId(parts[k], cat) === id) return { item: items[j], cat: cat, partId: id };
         }
       }
     }
     return null;
   }
-
-  function parseRoute() {
-    let hash = location.hash || "";
-    if (hash === "#top") return { name: "home" };
-    if (hash.charAt(0) === "#") hash = hash.slice(1);
-    if (hash.charAt(0) === "/") hash = hash.slice(1);
-    if (!hash) return { name: "home" };
-    const parts = hash.split("/").filter(Boolean);
-    if (parts[0] === "c" && parts[1]) {
-      return { name: "category", id: safeDecode(parts[1]) };
-    }
-    if (parts[0] === "i" && parts[1]) {
-      return { name: "item", id: safeDecode(parts[1]) };
-    }
-    return { name: "home" };
-  }
-
-  function safeDecode(value) {
-    try {
-      return decodeURIComponent(value);
-    } catch (err) {
-      return value;
-    }
-  }
-
-  const total = categories.reduce(function (n, cat) {
-    return n + publishedItems(cat).length;
-  }, 0);
-  function renderStats() {
-    statsEl.innerHTML =
-      '<span class="stat"><i>条目</i><b>' + pad2(total) + "</b></span>" +
-      '<span class="stat"><i>分类</i><b>' + pad2(categories.length) + "</b></span>";
-  }
-  renderStats();
-
-  function setActiveChip(activeId) {
-    chipsEl.querySelectorAll(".chip").forEach(function (btn) {
-      const on = btn.getAttribute("data-id") === activeId;
-      btn.classList.toggle("is-active", on);
-      if (on) btn.setAttribute("aria-current", "page");
-      else btn.removeAttribute("aria-current");
-    });
-    moveInk();
-    revealActiveChip();
-  }
-
-  function revealActiveChip() {
-    const active = chipsEl.querySelector(".chip.is-active");
-    if (!active || chipsEl.scrollWidth <= chipsEl.clientWidth) return;
-    // 把当前分类滚到中间，左右都能看到邻近的分类
-    const max = chipsEl.scrollWidth - chipsEl.clientWidth;
-    const target = active.offsetLeft - (chipsEl.clientWidth - active.offsetWidth) / 2;
-    chipsEl.scrollLeft = Math.max(0, Math.min(max, target));
-    updateChipFade();
-  }
-
-  // 移动端分类横向滑动：左右两侧还有未露出的分类时，对应一侧显示渐隐
-  function updateChipFade() {
-    const max = chipsEl.scrollWidth - chipsEl.clientWidth;
-    chipsEl.classList.toggle("has-more-left", chipsEl.scrollLeft > 2);
-    chipsEl.classList.toggle("has-more-right", max - chipsEl.scrollLeft > 2);
-  }
-
-  // 分类标签下的红色下划线：跟随当前分类，宽度与横向滚动位置一起算
-  function moveInk() {
-    if (!inkEl) return;
-    const active = chipsEl.querySelector(".chip.is-active");
-    if (!active) {
-      inkEl.style.width = "0px";
-      return;
-    }
-    const nav = chipsEl.getBoundingClientRect();
-    const r = active.getBoundingClientRect();
-    inkEl.style.width = r.width + "px";
-    inkEl.style.transform =
-      "translate(" +
-      (r.left - nav.left + chipsEl.scrollLeft) + "px, " +
-      (r.bottom - nav.top + chipsEl.scrollTop - 2) + "px)";
-  }
-
-  function makeChip(href, id, text, active, index) {
-    const btn = document.createElement("a");
-    btn.className = "chip" + (active ? " is-active" : "");
-    btn.href = href;
-    btn.setAttribute("data-id", id);
-    btn.draggable = false;
-    const num = document.createElement("span");
-    num.className = "chip-num";
-    num.setAttribute("aria-hidden", "true");
-    num.textContent = index;
-    btn.appendChild(num);
-    const label = document.createElement("span");
-    label.className = "chip-label";
-    label.textContent = text;
-    btn.appendChild(label);
-    return btn;
-  }
-
-  chipsEl.appendChild(makeChip("#/", "", "全部", true, "00"));
-  categories.forEach(function (cat, i) {
-    chipsEl.appendChild(makeChip("#/c/" + encodeURIComponent(cat.id), cat.id, cat.name, false, pad2(i + 1)));
+  var allEntries = [];
+  categories.forEach(function (cat) {
+    published(cat).forEach(function (it) { allEntries.push({ item: it, cat: cat }); });
   });
+  var totalItems = allEntries.length;
+  var totalPacks = allEntries.reduce(function (n, e) { return n + packItems(e.item).length; }, 0);
 
-  // 链接在鼠标微动时会被浏览器当成拖拽，从而吃掉 click。禁止拖拽，并在小位移内仍按点击切换。
-  chipsEl.addEventListener("dragstart", function (e) {
-    e.preventDefault();
-  });
-  let chipPress = null;
-  chipsEl.addEventListener("pointerdown", function (e) {
-    const chip = e.target.closest(".chip");
-    if (!chip || e.button !== 0) return;
-    chipPress = { x: e.clientX, y: e.clientY, chip: chip, id: e.pointerId };
-  });
-  function endChipPress(e) {
-    if (!chipPress || e.pointerId !== chipPress.id) return;
-    const press = chipPress;
-    chipPress = null;
-    if (e.type === "pointercancel") return;
-    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-    const dx = e.clientX - press.x;
-    const dy = e.clientY - press.y;
-    if (dx * dx + dy * dy > 16 * 16) return;
-    const over = document.elementFromPoint(e.clientX, e.clientY);
-    if (!over || !press.chip.contains(over)) return;
-    const href = press.chip.getAttribute("href");
-    if (href && location.hash !== href) location.hash = href;
+  /* ── 工具 ── */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null && text !== "") n.textContent = text;
+    return n;
   }
-  chipsEl.addEventListener("pointerup", endChipPress);
-  chipsEl.addEventListener("pointercancel", endChipPress);
-
-  requestAnimationFrame(function () {
-    requestAnimationFrame(moveInk);
-  });
-  // 字体加载后标签宽度会变，再对一次下划线
-  if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === "function") {
-    document.fonts.ready.then(function () {
-      moveInk();
-      updateChipFade();
-    }).catch(function () {});
+  function icon(name, cls) {
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", cls || "ic");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", "#i-" + name);
+    svg.appendChild(use);
+    return svg;
   }
-  let lastChipWidth = window.innerWidth;
-  window.addEventListener("resize", function () {
-    moveInk();
-    // 只在窗口宽度变化时重新对中当前分类，避免移动端键盘弹起时无谓滚动
-    if (window.innerWidth !== lastChipWidth) {
-      lastChipWidth = window.innerWidth;
-      revealActiveChip();
-    }
-    updateChipFade();
-  });
-  chipsEl.addEventListener("scroll", updateChipFade, { passive: true });
-  updateChipFade();
-
-  // 详情页里开始打字时跳回首页，在全部分类中显示结果
-  let searchFromItem = false;
-
-  function syncSearchState() {
-    const hasValue = !!qEl.value;
-    qClearEl.hidden = !hasValue;
-    const box = qEl.closest(".search");
-    if (box) box.classList.toggle("has-query", hasValue);
+  function norm(s) { return String(s || "").toLowerCase().trim(); }
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function fmtDate(v) {
+    if (!v) return "";
+    var m = String(v).match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    return m ? m[1] + "-" + pad2(m[2]) + "-" + pad2(m[3]) : String(v);
   }
-
-  function onQueryChange() {
-    syncSearchState();
-    const route = parseRoute();
-    if (route.name === "item" && norm(qEl.value)) {
-      searchFromItem = true;
-      location.hash = "#/";
-      return;
-    }
-    render();
+  function tokenize(q) { return norm(q).split(/\s+/).filter(Boolean); }
+  function haystack(entry) {
+    var it = entry.item;
+    var hay = [it.title, it.summary, it.source, (it.tags || []).join(" "), entry.cat.name];
+    packItems(it).forEach(function (p) { hay.push(p.title, p.summary); });
+    return norm(hay.join(" "));
   }
-
-  function clearQuery() {
-    if (!qEl.value) return;
-    qEl.value = "";
-    searchFromItem = false;
-    onQueryChange();
+  /* 多词 AND：每个词都要命中（名称/说明/来源/标签/分类/资料包名与说明） */
+  function matches(entry, query) {
+    var tokens = tokenize(query);
+    if (!tokens.length) return true;
+    var hay = haystack(entry);
+    return tokens.every(function (t) { return hay.indexOf(t) !== -1; });
   }
-
-  qEl.addEventListener("input", onQueryChange);
-  syncSearchState();
-  qEl.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      if (qEl.value) {
-        e.preventDefault();
-        clearQuery();
-      } else {
-        qEl.blur();
-      }
-    }
-  });
-  qClearEl.addEventListener("click", function () {
-    clearQuery();
-    qEl.focus();
-  });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && qEl.value && e.target !== qEl) {
-      clearQuery();
-      return;
-    }
-    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
-    const t = e.target;
-    const tag = t && t.tagName;
-    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
-    e.preventDefault();
-    qEl.focus();
-    qEl.select();
-  });
-
-  function norm(s) {
-    return String(s || "").toLowerCase().trim();
-  }
-
-  function matches(item, cat, query) {
-    if (!query) return true;
-    const hay = [
-      item.title,
-      item.summary,
-      item.source,
-      item.extractCode,
-      (item.tags || []).join(" "),
-      cat.name
-    ];
-    packItems(item).forEach(function (part) {
-      hay.push(part.title, part.summary);
-    });
-    return norm(hay.join(" ")).indexOf(query) !== -1;
-  }
-
-  function el(tag, className, text) {
-    const node = document.createElement(tag);
-    if (className) node.className = className;
-    if (text) node.textContent = text;
-    return node;
-  }
-
-  // 搜索高亮：先匹配完整查询词，再匹配按空白拆开的词；用文本节点和 <mark>，不拼 HTML
-  function highlightNeedles(query) {
-    const full = String(query || "").trim();
-    if (!full) return [];
-    const needles = [full];
-    full.split(/\s+/).forEach(function (tok) {
-      if (tok && needles.indexOf(tok) === -1) needles.push(tok);
-    });
+  function highlight(parent, text, query) {
+    var raw = String(text == null ? "" : text);
+    var needles = tokenize(query);
+    var full = norm(query);
+    if (full && needles.indexOf(full) === -1) needles.push(full);
     needles.sort(function (a, b) { return b.length - a.length; });
-    return needles;
-  }
-
-  function appendHighlighted(parent, text, query) {
-    const raw = String(text == null ? "" : text);
-    const needles = highlightNeedles(query);
-    if (!raw || !needles.length) {
-      if (raw) parent.appendChild(document.createTextNode(raw));
-      return;
-    }
-    const lower = raw.toLowerCase();
-    const ranges = [];
-    needles.forEach(function (needle) {
-      let from = 0;
-      let i;
-      while ((i = lower.indexOf(needle, from)) !== -1) {
-        ranges.push({ start: i, end: i + needle.length });
-        from = i + needle.length;
-      }
+    if (!raw || !needles.length) { if (raw) parent.appendChild(document.createTextNode(raw)); return; }
+    var lower = raw.toLowerCase(), ranges = [];
+    needles.forEach(function (nd) {
+      var from = 0, i;
+      while ((i = lower.indexOf(nd, from)) !== -1) { ranges.push([i, i + nd.length]); from = i + nd.length; }
     });
-    ranges.sort(function (a, b) {
-      if (a.start !== b.start) return a.start - b.start;
-      return (b.end - b.start) - (a.end - a.start);
-    });
-    const kept = [];
-    ranges.forEach(function (r) {
-      if (kept.length && r.start < kept[kept.length - 1].end) return;
-      kept.push(r);
-    });
-    let pos = 0;
+    ranges.sort(function (a, b) { return a[0] - b[0] || (b[1] - b[0]) - (a[1] - a[0]); });
+    var kept = [];
+    ranges.forEach(function (r) { if (!kept.length || r[0] >= kept[kept.length - 1][1]) kept.push(r); });
+    var pos = 0;
     kept.forEach(function (r) {
-      if (r.start > pos) parent.appendChild(document.createTextNode(raw.slice(pos, r.start)));
-      parent.appendChild(el("mark", "", raw.slice(r.start, r.end)));
-      pos = r.end;
+      if (r[0] > pos) parent.appendChild(document.createTextNode(raw.slice(pos, r[0])));
+      parent.appendChild(el("mark", "", raw.slice(r[0], r[1])));
+      pos = r[1];
     });
     if (pos < raw.length) parent.appendChild(document.createTextNode(raw.slice(pos)));
   }
-
-  function formatDate(value) {
-    if (!value) return "";
-    const m = String(value).match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    if (m) return m[1] + "年" + Number(m[2]) + "月" + Number(m[3]) + "日";
-    return String(value);
-  }
-
-  function backLink(href, text) {
-    const a = el("a", "back", text);
-    a.href = href;
-    return a;
-  }
-
-  function renderCard(item, cat, i, query) {
-    const id = itemId(item, cat);
-    const detail = "#/i/" + encodeURIComponent(id);
-    const card = el("a", "card");
-    card.href = detail;
-
-    const ref = el("span", "card-ref", String(cat.id || "").toUpperCase() + " / " + pad2(i + 1));
-    ref.setAttribute("aria-hidden", "true");
-    card.appendChild(ref);
-
-    const h3 = el("h3");
-    appendHighlighted(h3, item.title, query);
-    card.appendChild(h3);
-    if (item.summary) {
-      const sum = el("p", "summary");
-      appendHighlighted(sum, item.summary, query);
-      card.appendChild(sum);
-    }
-
-    if (item.tags && item.tags.length) {
-      const ul = el("ul", "tags");
-      item.tags.forEach(function (tag) {
-        const li = el("li");
-        appendHighlighted(li, tag, query);
-        ul.appendChild(li);
-      });
-      card.appendChild(ul);
-    }
-
-    const packs = packItems(item);
-    const footer = el("footer", "links");
-    if (packs.length) {
-      footer.appendChild(el("span", "pack-count", packs.length + " 个资料包"));
-    }
-    if (item.updated) {
-      footer.appendChild(el("span", "updated", "更新于 " + formatDate(item.updated)));
-    }
-    if (footer.children.length) card.appendChild(footer);
-    return card;
-  }
-
-  function countBadge(n) {
-    return el("span", n ? "count" : "count is-zero", String(n));
-  }
-
-  function categoryHint(cat, count) {
-    const seen = [];
-    publishedItems(cat).forEach(function (item) {
-      (item.tags || []).forEach(function (tag) {
-        const t = String(tag || "").trim();
-        if (t && seen.indexOf(t) === -1) seen.push(t);
-      });
-    });
-    if (seen.length) return seen.slice(0, 3).join(" · ");
-    return "共 " + count + " 条";
-  }
-
-  function renderCategoryIcon(cat) {
-    const symbolId = cat && cat.icon ? "i-" + String(cat.icon) : "";
-    if (symbolId && document.getElementById(symbolId)) {
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("class", "cat-entry-icon");
-      svg.setAttribute("aria-hidden", "true");
-      svg.setAttribute("focusable", "false");
-      svg.setAttribute("viewBox", "0 0 24 24");
-      svg.setAttribute("width", "21");
-      svg.setAttribute("height", "21");
-      const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-      use.setAttribute("href", "#" + symbolId);
-      use.setAttributeNS("http://www.w3.org/1999/xlink", "href", "#" + symbolId);
-      svg.appendChild(use);
-      return svg;
-    }
-    const name = cat && cat.name ? String(cat.name) : "";
-    const glyph = el("span", "cat-entry-glyph", name.charAt(0) || "?");
-    glyph.setAttribute("aria-hidden", "true");
-    return glyph;
-  }
-
-  function renderCatEntry(cat) {
-    const count = publishedItems(cat).length;
-    const card = el("a", "cat-entry");
-    card.href = "#/c/" + encodeURIComponent(cat.id);
-
-    const top = el("span", "cat-entry-top");
-    top.appendChild(el("span", "cat-entry-num", pad2(categories.indexOf(cat) + 1)));
-    top.appendChild(el("span", "cat-entry-count", count + " 条"));
-    card.appendChild(top);
-
-    const title = el("span", "cat-entry-title");
-    title.appendChild(renderCategoryIcon(cat));
-    title.appendChild(el("span", "cat-entry-name", cat.name));
-    card.appendChild(title);
-    card.appendChild(el("span", "cat-entry-hint", categoryHint(cat, count)));
-    return card;
-  }
-
-  // opts.linkedTitle：分类名做成链接（首页搜索结果）
-  // opts.back：分类页，返回链接和分类编号放在顶部
-  function renderGroup(cat, items, opts) {
-    opts = opts || {};
-    const linkedTitle = !!opts.linkedTitle;
-    const section = el("section", opts.back ? "group group-page" : "group");
-    if (opts.back) {
-      section.appendChild(backLink("#/", "返回首页"));
-      const index = categories.indexOf(cat);
-      section.appendChild(el(
-        "p",
-        "group-kicker",
-        "INDEX / " + pad2(index + 1) + " · " + String(cat.id || "").toUpperCase()
-      ));
-    }
-
-    const head = el("div", "group-head");
-    const h2 = el("h2");
-    if (linkedTitle) {
-      const a = el("a", "cat-link", cat.name);
-      a.href = "#/c/" + encodeURIComponent(cat.id);
-      h2.appendChild(a);
-      h2.appendChild(document.createTextNode(" "));
-    } else {
-      h2.appendChild(document.createTextNode(cat.name + " "));
-    }
-    h2.appendChild(countBadge(items.length));
-    head.appendChild(h2);
-    section.appendChild(head);
-    if (cat.description) section.appendChild(el("p", "group-desc", cat.description));
-
-    const query = norm(qEl.value);
-    if (!items.length) {
-      const emptyText = query
-        ? "没有匹配的条目。"
-        : (cat.empty || "还没有条目，欢迎补充。");
-      section.appendChild(el("p", "empty", emptyText));
-      return section;
-    }
-
-    const grid = el("div", "grid");
-    items.forEach(function (item, i) {
-      grid.appendChild(renderCard(item, cat, i, query));
-    });
-    section.appendChild(grid);
-    return section;
-  }
-
-  function setDocumentTitle(page) {
-    const base = site.title || "电创导航";
-    document.title = page ? page + " · " + base : base;
-  }
-
-  function searchHint(scope, raw, found, prefix, forceClear) {
-    const p = el("p", "search-hint");
-    // 只把文字放进 live region，清除按钮留在外面，避免读屏把交互控件当状态播报
-    const status = el("span", "search-hint-text");
-    status.setAttribute("role", "status");
-    status.appendChild(document.createTextNode((prefix || "") + "在" + scope + "中搜索「"));
-    status.appendChild(el("b", "", raw));
-    status.appendChild(document.createTextNode("」 · 共 " + found + " 条 · "));
-    p.appendChild(status);
-    // 首页零结果由下方 empty-state 提供主按钮；分类页没有 empty-state，由这里提供清除入口
-    if (found > 0 || forceClear) {
-      const clear = el("button", "search-hint-clear", "清除");
-      clear.type = "button";
-      clear.addEventListener("click", function () {
-        clearQuery();
-        qEl.focus();
-      });
-      p.appendChild(clear);
-    }
-    return p;
-  }
-
-  function renderPendingLine(cats) {
-    const p = el("p", "pending-line");
-    p.appendChild(document.createTextNode("待收录："));
-    cats.forEach(function (cat, i) {
-      if (i) p.appendChild(document.createTextNode("、"));
-      const a = el("a", "", cat.name);
-      a.href = "#/c/" + encodeURIComponent(cat.id);
-      p.appendChild(a);
-    });
-    return p;
-  }
-
-  function renderRecent() {
-    const all = [];
-    categories.forEach(function (cat) {
-      publishedItems(cat).forEach(function (item) {
-        all.push(item);
-      });
-    });
-    const items = sortItems(all).slice(0, 8);
-    if (!items.length) return null;
-
-    const section = el("section", "recent-block");
-
-    const head = el("div", "sec-head");
-    head.appendChild(el("span", "sec-kicker", "RECENT"));
-    head.appendChild(el("h2", "", "最近加入"));
-    section.appendChild(head);
-
-    const list = el("ul", "recent-list");
-    items.forEach(function (item) {
-      const found = findItem(itemId(item));
-      const cat = found ? found.cat : null;
-      const li = el("li");
-      const a = el("a", "recent-item");
-      a.href = "#/i/" + encodeURIComponent(itemId(item, cat));
-      const meta = el("span", "recent-meta");
-      if (cat && cat.name) meta.appendChild(el("span", "recent-cat", cat.name));
-      if (item.updated) meta.appendChild(el("span", "recent-date", formatDate(item.updated)));
-      a.appendChild(meta);
-      a.appendChild(el("span", "recent-title", item.title));
-      li.appendChild(a);
-      list.appendChild(li);
-    });
-    section.appendChild(list);
-    return section;
-  }
-
-  function renderHome() {
-    const raw = qEl.value.trim();
-    const query = norm(raw);
-    setDocumentTitle(query ? "搜索：" + raw : "");
-    const fromItem = searchFromItem;
-    searchFromItem = false;
-    if (!query) {
-      const filled = categories.filter(function (cat) { return publishedItems(cat).length; });
-      const pending = categories.filter(function (cat) { return !publishedItems(cat).length; });
-      const layout = el("div", "home-layout");
-      const mainCol = el("div", "home-main");
-      if (filled.length) {
-        const block = el("section", "index-block");
-        const head = el("div", "sec-head");
-        head.appendChild(el("span", "sec-kicker", "INDEX"));
-        head.appendChild(el("h2", "", "分类索引"));
-        head.appendChild(el("span", "sec-meta", pad2(filled.length) + " / " + pad2(categories.length) + " 个分类"));
-        block.appendChild(head);
-        const grid = el("div", "cat-entry-grid");
-        filled.forEach(function (cat) {
-          grid.appendChild(renderCatEntry(cat));
-        });
-        block.appendChild(grid);
-        mainCol.appendChild(block);
-      }
-      if (pending.length) mainCol.appendChild(renderPendingLine(pending));
-      layout.appendChild(mainCol);
-      const recent = renderRecent();
-      if (recent) {
-        layout.appendChild(recent);
-        layout.classList.add("has-side");
-      }
-      if (!mainCol.children.length && !recent) {
-        layout.appendChild(el("p", "empty", "还没有条目，欢迎补充。"));
-      }
-      mainEl.appendChild(layout);
-      return;
-    }
-    let found = 0;
-    const groups = [];
-    categories.forEach(function (cat) {
-      const items = sortItems(publishedItems(cat).filter(function (item) {
-        return matches(item, cat, query);
-      }));
-      if (!items.length) return;
-      found += items.length;
-      groups.push(renderGroup(cat, items, { linkedTitle: true }));
-    });
-    mainEl.appendChild(searchHint("全部分类", raw, found, fromItem ? "已回到首页，" : ""));
-    groups.forEach(function (g) { mainEl.appendChild(g); });
-    if (!groups.length) {
-      const empty = el("div", "empty-state");
-      empty.appendChild(el("h3", "", "没有匹配的条目"));
-      empty.appendChild(el("p", "", "换一个更短的关键词试试，或清除搜索查看全部分类。"));
-      const clear = el("button", "btn-ghost", "清除搜索");
-      clear.type = "button";
-      clear.addEventListener("click", function () {
-        clearQuery();
-        qEl.focus();
-      });
-      empty.appendChild(clear);
-      mainEl.appendChild(empty);
-    }
-  }
-
-  function renderCategory(cat) {
-    const raw = qEl.value.trim();
-    const query = norm(raw);
-    setDocumentTitle(query ? cat.name + " · 搜索：" + raw : cat.name);
-    const items = sortItems(publishedItems(cat).filter(function (item) {
-      return matches(item, cat, query);
-    }));
-    if (query) mainEl.appendChild(searchHint("「" + cat.name + "」", raw, items.length, "", true));
-    mainEl.appendChild(renderGroup(cat, items, { back: true }));
-  }
-
-  // size 可以写成 "8.2 MB" 这样的文字，也可以直接写字节数
-  function formatSize(size) {
-    if (typeof size === "number" && isFinite(size)) {
-      if (size >= 1024 * 1024) return (size / 1024 / 1024).toFixed(1) + " MB";
-      return Math.max(1, Math.round(size / 1024)) + " KB";
-    }
-    return String(size || "");
-  }
-
-  const KNOWN_EXT = ["zip", "rar", "7z", "tar", "gz", "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "exe", "msi", "apk", "hex", "bin"];
+  var KNOWN_EXT = ["zip", "rar", "7z", "tar", "gz", "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "exe", "msi", "apk", "hex", "bin"];
   function extOf(url) {
     try {
-      const path = new URL(url, location.href).pathname;
-      const m = path.match(/\.([a-z0-9]+)$/i);
-      const ext = m ? m[1].toLowerCase() : "";
+      var path = new URL(url, location.href).pathname;
+      var m = path.match(/\.([a-z0-9]+)$/i);
+      var ext = m ? m[1].toLowerCase() : "";
       return KNOWN_EXT.indexOf(ext) !== -1 ? ext : "";
-    } catch (err) {
-      return "";
+    } catch (e) { return ""; }
+  }
+  function hostNote(url) {
+    try {
+      var host = new URL(url, location.href).hostname.replace(/^www\./, "");
+      if (!host) return "本站页面";
+      if (host.indexOf("pan.baidu.com") !== -1) return "百度网盘";
+      if (host.indexOf("taobao.com") !== -1 || host.indexOf("tb.cn") !== -1) return "淘宝";
+      if (host.indexOf("bilibili.com") !== -1) return "哔哩哔哩";
+      return host;
+    } catch (e) { return ""; }
+  }
+  function fileNote(obj) {
+    var bits = [];
+    if (obj.size) bits.push(String(obj.size));
+    var fmt = obj.format || extOf(obj.url);
+    if (fmt) bits.push(fmt);
+    return bits.filter(Boolean).join(" · ");
+  }
+  /* 相对链接（如 tools/xxx.html）从站点根解析：本页就在根目录，去掉开头 ./ 即可 */
+  function resolveUrl(url) {
+    if (/^([a-z][a-z0-9+.-]*:|\/\/|#)/i.test(url)) return url;
+    return String(url).replace(/^\.?\//, "");
+  }
+  function extLink(label, url, note, primary, summary) {
+    var a = el("a", "entry" + (primary ? " is-primary" : "") + (summary ? " pack-entry" : ""));
+    a.href = resolveUrl(url);
+    a.rel = "noopener noreferrer";
+    a.target = "_blank";
+    if (summary) {
+      var bd = el("span", "pack-body");
+      var lb = el("span", "entry-label", label);
+      lb.appendChild(icon("ext"));
+      bd.appendChild(lb);
+      bd.appendChild(el("span", "pack-summary", summary));
+      a.appendChild(bd);
+    } else {
+      var l = el("span", "entry-label", label);
+      l.appendChild(icon("ext"));
+      a.appendChild(l);
     }
+    if (note) a.appendChild(el("span", "entry-note", note));
+    return a;
+  }
+  function focusEl(node) {
+    if (!node) return;
+    try { node.focus({ preventScroll: true }); } catch (e) { node.focus(); }
+  }
+  var toastTimer = 0;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.hidden = true; }, 2200);
+  }
+
+  /* ── 状态与路由 ── */
+  var state = { cat: "", q: "", sel: null };
+
+  function currentHash() {
+    var base = state.sel ? "#/i/" + encodeURIComponent(state.sel)
+      : state.cat ? "#/c/" + encodeURIComponent(state.cat)
+      : "#/";
+    if (state.q.trim()) base += "?q=" + encodeURIComponent(state.q.trim());
+    return base;
+  }
+  /* hash 只作快照：replaceState 同步改地址、不产生历史条目、不触发 hashchange。
+     file:// 下个别浏览器可能拒绝 replaceState，降级为 location.hash + 计数吞事件。 */
+  var hashFallbackPending = 0;
+  function writeHash() {
+    var h = currentHash();
+    if (location.hash === h || (!location.hash && h === "#/")) return;
+    try {
+      history.replaceState(null, "", h);
+    } catch (e) {
+      hashFallbackPending++;
+      location.hash = h;
+      setTimeout(function () {
+        if (hashFallbackPending > 0 && location.hash === currentHash()) hashFallbackPending = 0;
+      }, 0);
+    }
+  }
+  function safeDecode(v) { try { return decodeURIComponent(v); } catch (e) { return v; } }
+  /* readHash 暂存的资料包深链请求：#/i/<资料包id> 打开父合集后定位到该包。
+     每次 readHash 先清空，连续 hash 切换不会残留旧 part 误定位。 */
+  var pendingPartId = null;
+  function readHash() {
+    pendingPartId = null;
+    var raw = location.hash.replace(/^#\/?/, "");
+    var qi = raw.indexOf("?q=");
+    state.q = qi >= 0 ? safeDecode(raw.slice(qi + 3)) : "";
+    var h = qi >= 0 ? raw.slice(0, qi) : raw;
+    var parts = h.split("/").filter(Boolean);
+    if (parts[0] === "i" && parts[1]) {
+      var found = findItem(safeDecode(parts[1]));
+      if (found) {
+        state.sel = itemId(found.item, found.cat);
+        state.cat = found.cat.id;
+        if (found.partId) pendingPartId = found.partId;
+        return;
+      }
+      state.sel = null;
+      return;
+    }
+    if (parts[0] === "c" && parts[1]) {
+      var cid = safeDecode(parts[1]);
+      state.cat = findCat(cid) ? cid : "";
+      state.sel = null;
+      return;
+    }
+    state.cat = "";
+    state.sel = null;
+  }
+
+  /* 消费资料包深链：父合集渲染完成后走既有 locatePack（只定位不下载）。
+     同时取消上一次定位的褪去计时并清掉旧高亮/目录标记，避免连续切换时旧回调误清新状态。 */
+  function applyPendingPart() {
+    if (!pendingPartId || !state.sel) { pendingPartId = null; return; }
+    var partId = pendingPartId;
+    pendingPartId = null;
+    clearTimeout(locateTimer);
+    locatedPack = null;
+    locateParent = null;
+    Array.prototype.forEach.call(detailBody.querySelectorAll(".pack-tile.is-located"), function (n) {
+      n.classList.remove("is-located");
+    });
+    locatePack(state.sel, partId);
+  }
+
+  /* 当前结果集（中栏列表顺序，供 ↑↓ 与上一条/下一条共用） */
+  function currentResults() {
+    var pool = state.cat
+      ? published(findCat(state.cat)).map(function (it) { return { item: it, cat: findCat(state.cat) }; })
+      : allEntries;
+    var filtered = pool.filter(function (e) { return matches(e, state.q); });
+    if (state.cat) {
+      var theCat = findCat(state.cat);
+      return sortItems(filtered.map(function (e) { return e.item; }))
+        .map(function (it) { return { item: it, cat: theCat }; });
+    }
+    /* 全部：按分类分组展示，组内 updated 倒序 */
+    var out = [];
+    categories.forEach(function (cat) {
+      sortItems(filtered.filter(function (e) { return e.cat === cat; }).map(function (e) { return e.item; }))
+        .forEach(function (it) { out.push({ item: it, cat: cat }); });
+    });
+    return out;
+  }
+
+  /* ── 渲染：顶栏查询状态 ── */
+  function renderTrigger() {
+    var q = state.q.trim();
+    triggerEl.classList.toggle("has-query", !!q);
+    qClear.hidden = !q;
+    if (q) {
+      triggerLabel.textContent = "";
+      triggerLabel.appendChild(document.createTextNode("查询「"));
+      triggerLabel.appendChild(el("b", "", q));
+      triggerLabel.appendChild(document.createTextNode("」 · 点击修改"));
+    } else {
+      triggerLabel.textContent = "搜索资料、打开工具…";
+    }
+  }
+
+  /* ── 渲染：左栏分类 ── */
+  function renderCats() {
+    catListEl.innerHTML = "";
+    var rows = [{ id: "", name: "全部资料", icon: "all", count: totalItems }].concat(
+      categories.map(function (c) { return { id: c.id, name: c.name, icon: c.icon, count: published(c).length }; })
+    );
+    rows.forEach(function (row) {
+      var li = el("li", "cat-item");
+      var btn = el("button", "cat-btn" + (state.cat === row.id ? " is-active" : ""));
+      btn.type = "button";
+      btn.dataset.cat = row.id;
+      if (state.cat === row.id) btn.setAttribute("aria-current", "true");
+      btn.appendChild(icon(row.icon || "all"));
+      btn.appendChild(el("span", "cat-name", row.name));
+      btn.appendChild(el("span", "cat-count" + (row.count ? "" : " is-zero"), pad2(row.count)));
+      btn.addEventListener("click", function () { selectCategory(row.id); });
+      li.appendChild(btn);
+      catListEl.appendChild(li);
+    });
+  }
+
+  /* ── 渲染：左栏目录（当前结果的条目 + 合集子包） ── */
+  function renderOutline() {
+    outlineBody.innerHTML = "";
+    var cat = state.cat ? findCat(state.cat) : null;
+    outlineKicker.textContent = cat ? "OUTLINE / " + cat.name : "OUTLINE / 全部资料";
+    var entries = currentResults();
+    if (!entries.length) {
+      outlineBody.appendChild(el("p", "outline-empty", norm(state.q) ? "当前搜索没有匹配条目。" : (cat && cat.empty) || "还没有条目，欢迎补充。"));
+      return;
+    }
+    var ul = el("ul", "outline-list");
+    entries.forEach(function (e, i) {
+      var id = itemId(e.item, e.cat);
+      var li = el("li");
+      var btn = el("button", "outline-btn" + (state.sel === id ? " is-current" : ""));
+      btn.type = "button";
+      btn.dataset.item = id;
+      btn.appendChild(el("span", "outline-num", pad2(i + 1)));
+      var t = el("span", "outline-title");
+      highlight(t, e.item.title, state.q);
+      btn.appendChild(t);
+      btn.addEventListener("click", function () { selectItem(id, { from: "outline" }); });
+      li.appendChild(btn);
+      var parts = packItems(e.item);
+      /* 选中项展开子包；刚被目录定位过的父合集也保持展开（高亮可见） */
+      if (parts.length && (state.sel === id || locateParent === id)) {
+        var sub = el("ul", "outline-pack");
+        parts.forEach(function (p) {
+          var sli = el("li");
+          /* 目录项只定位不下载：button 而非外链，Enter/Space 同样只定位 */
+          var pb = el("button", "", p.title);
+          pb.type = "button";
+          pb.dataset.pack = itemId(p, e.cat);
+          pb.title = "在详情中查看：" + p.title + (p.size ? "（" + p.size + "）" : "");
+          if (locatedPack === itemId(p, e.cat)) pb.classList.add("is-located");
+          pb.addEventListener("click", function () { locatePack(id, itemId(p, e.cat)); });
+          sli.appendChild(pb);
+          sub.appendChild(sli);
+        });
+        li.appendChild(sub);
+      }
+      ul.appendChild(li);
+    });
+    outlineBody.appendChild(ul);
+  }
+
+  /* ── 渲染：中栏列表 ── */
+  function resultCard(e, index, query) {
+    var it = e.item, id = itemId(it, e.cat);
+    var li = el("li");
+    var btn = el("button", "result-card" + (state.sel === id ? " is-selected" : ""));
+    btn.type = "button";
+    btn.dataset.item = id;
+    btn.setAttribute("aria-pressed", state.sel === id ? "true" : "false");
+
+    var top = el("span", "rc-top");
+    top.appendChild(el("span", "rc-cat", e.cat.name));
+    if (it.updated) top.appendChild(el("span", "rc-date", fmtDate(it.updated)));
+    btn.appendChild(top);
+
+    var title = el("span", "rc-title");
+    highlight(title, it.title, query);
+    btn.appendChild(title);
+
+    if (it.summary) {
+      var sum = el("span", "rc-summary");
+      highlight(sum, it.summary, query);
+      btn.appendChild(sum);
+    }
+
+    var meta = el("span", "rc-meta");
+    if (it.tags && it.tags.length) {
+      var tags = el("span", "rc-tags");
+      it.tags.slice(0, 3).forEach(function (tag) {
+        var s = el("span");
+        highlight(s, tag, query);
+        tags.appendChild(s);
+      });
+      meta.appendChild(tags);
+    }
+    var packs = packItems(it);
+    var kind = packs.length ? packs.length + " 个资料包" : (it.format || extOf(it.url) || (it.url ? "链接" : ""));
+    if (kind) meta.appendChild(el("span", "rc-kind", kind));
+    if (meta.children.length) btn.appendChild(meta);
+
+    btn.addEventListener("click", function () { selectItem(id, { from: "list" }); });
+    li.appendChild(btn);
+    return li;
+  }
+
+  function renderResults() {
+    var query = norm(state.q);
+    var cat = state.cat ? findCat(state.cat) : null;
+    var entries = currentResults();
+
+    resultsKicker.textContent = cat
+      ? "INDEX " + pad2(categories.indexOf(cat) + 1) + " / " + String(cat.id).toUpperCase()
+      : "ALL / 全部资料";
+    resultsTitle.textContent = query ? "搜索结果" : (cat ? cat.name : "全部资料");
+    resultsCount.textContent = pad2(entries.length) + " 条";
+
+    /* 搜索状态行 */
+    searchStatus.innerHTML = "";
+    if (query) {
+      searchStatus.hidden = false;
+      var txt = el("span");
+      txt.appendChild(document.createTextNode("「"));
+      txt.appendChild(el("b", "", state.q.trim()));
+      txt.appendChild(document.createTextNode("」 · " + entries.length + " 条匹配"));
+      searchStatus.appendChild(txt);
+      var clear = el("button", "", "清除");
+      clear.type = "button";
+      clear.addEventListener("click", function () { clearQuery(); });
+      searchStatus.appendChild(clear);
+    } else {
+      searchStatus.hidden = true;
+    }
+
+    resultListEl.innerHTML = "";
+    resultsEmpty.innerHTML = "";
+    entries.forEach(function (e, i) { resultListEl.appendChild(resultCard(e, i, state.q)); });
+
+    if (!entries.length) {
+      var block = el("div", "empty-block");
+      if (query) {
+        block.appendChild(el("h2", "", "没有匹配的条目"));
+        block.appendChild(el("p", "", "换一个更短的关键词，或清除搜索看看全部资料。"));
+        var b = el("button", "btn-solid", "清除搜索");
+        b.type = "button";
+        b.addEventListener("click", function () { clearQuery(); });
+        block.appendChild(b);
+      } else {
+        block.appendChild(el("h2", "", (cat && cat.empty) || "还没有条目"));
+        block.appendChild(el("p", "", "这个分类还在等第一份资料；先看看其他分类吧。"));
+        var b2 = el("button", "btn-solid", "查看全部资料");
+        b2.type = "button";
+        b2.addEventListener("click", function () { selectCategory(""); });
+        block.appendChild(b2);
+      }
+      resultsEmpty.appendChild(block);
+    }
+  }
+
+  /* ── 渲染：右栏详情 ── */
+  function keyRow(caps, label) {
+    var row = el("div", "ph-key");
+    var capsBox = el("span", "ph-key-caps");
+    caps.forEach(function (c, i) {
+      if (c === "|") { capsBox.appendChild(el("span", "or", "或")); return; }
+      if (i > 0 && caps[i - 1] !== "|" && c !== "+") capsBox.appendChild(document.createTextNode(" "));
+      if (c === "+") { capsBox.appendChild(el("span", "or", "+")); return; }
+      capsBox.appendChild(el("kbd", "", c));
+    });
+    row.appendChild(capsBox);
+    row.appendChild(el("span", "ph-key-label", label));
+    return row;
+  }
+  function placeholder(kind) {
+    var box = el("div", "detail-placeholder");
+    box.appendChild(icon(kind === "noresult" ? "search" : (kind === "emptycat" ? "archive" : "book"), "ic ph-glyph"));
+    if (kind === "noresult") {
+      box.appendChild(el("h2", "", "没有匹配的资料"));
+      box.appendChild(el("p", "", "当前查询在这个分类里没有命中，换个关键词或清除搜索看看。"));
+      var b1 = el("button", "btn-solid", "清除搜索");
+      b1.type = "button";
+      b1.addEventListener("click", function () { clearQuery(); });
+      box.appendChild(b1);
+      var k1 = el("div", "ph-keys");
+      k1.appendChild(keyRow(["/"], "重新搜索"));
+      k1.appendChild(keyRow(["Esc"], "清除当前查询"));
+      box.appendChild(k1);
+    } else if (kind === "emptycat") {
+      box.appendChild(el("h2", "", "这个分类还是空的"));
+      box.appendChild(el("p", "", "还没有收录资料，先看看其他分类吧。"));
+      var b2 = el("button", "btn-solid", "查看全部资料");
+      b2.type = "button";
+      b2.addEventListener("click", function () { selectCategory(""); });
+      box.appendChild(b2);
+      var k2 = el("div", "ph-keys");
+      k2.appendChild(keyRow(["/"], "搜索全部资料"));
+      k2.appendChild(keyRow(["Ctrl", "+", "K"], "打开命令面板"));
+      box.appendChild(k2);
+    } else {
+      box.appendChild(el("h2", "", "从中间列表选一条资料"));
+      box.appendChild(el("p", "", "说明、来源、下载与相关入口会显示在这里。"));
+      var keys = el("div", "ph-keys");
+      keys.appendChild(keyRow(["/", "|", "Ctrl", "+", "K"], "搜索与定位"));
+      keys.appendChild(keyRow(["↑", "↓"], "切换资料"));
+      keys.appendChild(keyRow(["Esc"], "关闭详情"));
+      box.appendChild(keys);
+    }
+    return box;
   }
 
   function copyText(text) {
     if (navigator.clipboard && window.isSecureContext) {
-      return navigator.clipboard.writeText(text).catch(function () {
-        return legacyCopy(text);
-      });
+      return navigator.clipboard.writeText(text).catch(function () { return legacyCopy(text); });
     }
     return legacyCopy(text);
   }
-
   function legacyCopy(text) {
     return new Promise(function (resolve, reject) {
-      const ta = document.createElement("textarea");
+      var ta = document.createElement("textarea");
       ta.value = text;
       ta.setAttribute("readonly", "");
       ta.style.position = "fixed";
@@ -738,255 +552,981 @@
       ta.style.opacity = "0";
       document.body.appendChild(ta);
       ta.select();
-      let ok = false;
-      try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
       document.body.removeChild(ta);
-      if (ok) resolve();
-      else reject(new Error("copy failed"));
+      ok ? resolve() : reject(new Error("copy failed"));
     });
   }
 
-  function copyLinkButton() {
-    const btn = el("button", "copy-link", "复制链接");
-    btn.type = "button";
-    let timer = 0;
-    btn.addEventListener("click", function () {
-      copyText(location.href).then(function () {
-        btn.textContent = "已复制";
-        btn.classList.add("is-done");
-      }, function () {
-        btn.textContent = "复制失败，请手动复制地址栏";
-      }).then(function () {
-        clearTimeout(timer);
-        timer = setTimeout(function () {
-          btn.textContent = "复制链接";
-          btn.classList.remove("is-done");
-        }, 1800);
-      });
-    });
-    return btn;
-  }
-
-  function metaRow(label, value, valueClass) {
-    const row = el("div", "detail-row");
+  function metaRow(label, value) {
+    var row = el("div");
     row.appendChild(el("i", "", label));
-    const b = el("b", valueClass || "", value);
-    row.appendChild(b);
+    row.appendChild(el("b", "", value));
     return row;
   }
 
-  function renderItem(found) {
-    const item = found.item;
-    const cat = found.cat;
-    setDocumentTitle(item.title);
-    renderStats();
+  function renderDetail() {
+    detailBody.innerHTML = "";
+    var entries = currentResults();
+    var found = state.sel ? findItem(state.sel) : null;
 
-    const page = el("article", "detail");
-
-    const topRow = el("div", "detail-top");
-    topRow.appendChild(backLink("#/c/" + encodeURIComponent(cat.id), "返回" + cat.name));
-    topRow.appendChild(copyLinkButton());
-    page.appendChild(topRow);
-
-    const kicker = el("p", "detail-kicker");
-    kicker.appendChild(el("span", "", String(cat.id || "").toUpperCase()));
-    kicker.appendChild(document.createTextNode(" / "));
-    const catLink = el("a", "", cat.name);
-    catLink.href = "#/c/" + encodeURIComponent(cat.id);
-    kicker.appendChild(catLink);
-    page.appendChild(kicker);
-
-    page.appendChild(el("h2", "", item.title));
-    if (item.summary) page.appendChild(el("p", "detail-summary", item.summary));
-
-    if (item.tags && item.tags.length) {
-      const ul = el("ul", "tags");
-      item.tags.forEach(function (tag) {
-        ul.appendChild(el("li", "", tag));
-      });
-      page.appendChild(ul);
+    /* 步进器状态 */
+    var idx = -1;
+    if (found) {
+      var selId = itemId(found.item, found.cat);
+      idx = entries.findIndex(function (e) { return itemId(e.item, e.cat) === selId; });
     }
+    prevBtn.disabled = idx <= 0;
+    nextBtn.disabled = idx === -1 || idx >= entries.length - 1;
+    stepPos.textContent = idx >= 0 ? (idx + 1) + " / " + entries.length : "– / " + entries.length;
 
-    const meta = el("div", "detail-meta");
-    if (item.source) meta.appendChild(metaRow("来源", item.source));
-    if (item.extractCode) meta.appendChild(metaRow("提取码", item.extractCode, "extract"));
-    if (item.expiry) meta.appendChild(metaRow("有效期", item.expiry));
-    if (item.updated) meta.appendChild(metaRow("更新", formatDate(item.updated)));
-    if (meta.children.length) page.appendChild(meta);
-
-    function hostNote(url) {
-      try {
-        const host = new URL(url, location.href).hostname.replace(/^www\./, "");
-        if (host.indexOf("pan.baidu.com") !== -1) return "百度网盘";
-        if (host.indexOf("taobao.com") !== -1 || host.indexOf("tb.cn") !== -1) return "淘宝";
-        if (host.indexOf("tmall.com") !== -1) return "天猫";
-        if (host.indexOf("bilibili.com") !== -1) return "哔哩哔哩";
-        return host;
-      } catch (err) {
-        return "";
-      }
+    if (!found) {
+      detailKicker.textContent = "DETAIL / 详情";
+      var kind = entries.length ? "idle" : (norm(state.q) ? "noresult" : "emptycat");
+      detailBody.appendChild(placeholder(kind));
+      detailScroll.classList.add("is-empty"); /* 空态在右栏可用区域内居中 */
+      body.classList.remove("detail-open");
+      return;
     }
+    detailScroll.classList.remove("is-empty");
 
-    function fileNote(obj) {
-      const bits = [];
-      if (obj.size) bits.push(formatSize(obj.size));
-      const fmt = obj.format || extOf(obj.url);
-      if (fmt) bits.push(fmt);
-      return bits.filter(Boolean).join(" · ");
+    var it = found.item, cat = found.cat;
+    detailKicker.textContent = "DETAIL / " + String(cat.id).toUpperCase();
+
+    var doc = el("article", "detail-doc");
+    var packs = packItems(it);
+
+    /* —— 页头：kicker + 标题 + 摘要 + 标签 ｜ 元信息（宽屏时右侧成区）—— */
+    var head = el("header", "dc-head");
+    var headMain = el("div", "dc-head-main");
+    var kicker = el("p", "dc-kicker");
+    kicker.appendChild(document.createTextNode(String(cat.id).toUpperCase() + " / "));
+    var catBtn = el("button", "", cat.name);
+    catBtn.type = "button";
+    catBtn.title = "查看「" + cat.name + "」分类";
+    catBtn.addEventListener("click", function () { selectCategory(cat.id); });
+    kicker.appendChild(catBtn);
+    if (packs.length) kicker.appendChild(document.createTextNode(" · 合集"));
+    headMain.appendChild(kicker);
+
+    var h2 = el("h2", "", it.title);
+    h2.id = "detail-title";
+    h2.tabIndex = -1;
+    headMain.appendChild(h2);
+    if (it.summary) headMain.appendChild(el("p", "dc-summary", it.summary));
+    if (it.tags && it.tags.length) {
+      var tags = el("ul", "dc-tags");
+      it.tags.forEach(function (t) { tags.appendChild(el("li", "", t)); });
+      headMain.appendChild(tags);
     }
+    head.appendChild(headMain);
 
-    function entryLink(label, url, note, primary) {
-      const a = el("a", primary ? "entry is-primary" : "entry");
-      a.href = url;
-      a.rel = "noopener noreferrer";
-      a.target = "_blank";
-      a.appendChild(el("span", "entry-label", label));
-      if (note) a.appendChild(el("span", "entry-note", note));
-      return a;
-    }
-
-    const packs = packItems(item);
+    /* 元信息只出现一次：合集放页头侧区；普通条目放下方「资料说明」区，避免重复 */
     if (packs.length) {
-      const packList = el("section", "entry-list");
-      const packHead = el("div", "entry-list-head");
-      packHead.appendChild(el("h3", "", "选择下载"));
-      if (item.allUrl) {
-        const all = el("a", "entry-all", "查看全部资料包");
-        all.href = item.allUrl;
-        all.rel = "noopener noreferrer";
+      var meta = el("div", "dc-meta");
+      if (it.source) meta.appendChild(metaRow("来源", it.source));
+      if (it.extractCode) meta.appendChild(metaRow("提取码", it.extractCode));
+      if (it.expiry) meta.appendChild(metaRow("有效期", it.expiry));
+      if (it.updated) meta.appendChild(metaRow("更新", fmtDate(it.updated)));
+      meta.appendChild(metaRow("资料包", packs.length + " 个"));
+      var headSide = el("div", "dc-head-side");
+      headSide.appendChild(meta);
+      head.appendChild(headSide);
+    }
+    doc.appendChild(head);
+
+    /* —— 主体：合集 = 2×2 资料包网格；普通条目 = 说明区 + 操作区（宽屏分栏）—— */
+    if (packs.length) {
+      var sec = el("section", "dc-section dc-packs");
+      var shead = el("div", "dc-section-head");
+      shead.appendChild(el("h3", "", "选择下载 / " + packs.length + " 个资料包"));
+      if (it.allUrl) {
+        var all = el("a", "dc-all", "查看全部资料包 ↗");
+        all.href = resolveUrl(it.allUrl);
         all.target = "_blank";
-        packHead.appendChild(all);
+        all.rel = "noopener noreferrer";
+        shead.appendChild(all);
       }
-      packList.appendChild(packHead);
-      packs.forEach(function (part) {
-        const a = el("a", "entry pack-entry");
-        a.href = part.url;
-        a.rel = "noopener noreferrer";
-        a.target = "_blank";
-        const body = el("span", "pack-body");
-        body.appendChild(el("span", "entry-label", part.title));
-        if (part.summary) body.appendChild(el("span", "pack-summary", part.summary));
-        a.appendChild(body);
-        const note = fileNote(part) || hostNote(part.url);
-        if (note) a.appendChild(el("span", "entry-note", note));
-        if (found.partId && itemId(part, cat) === found.partId) {
-          a.classList.add("is-target");
-          packFocus = a;
-        }
-        packList.appendChild(a);
+      sec.appendChild(shead);
+      var grid = el("div", "pack-grid");
+      packs.forEach(function (p) {
+        var tile = el("a", "pack-tile" + (found.partId && itemId(p, cat) === found.partId ? " is-part" : ""));
+        tile.href = resolveUrl(p.url);
+        tile.target = "_blank";
+        tile.rel = "noopener noreferrer";
+        tile.dataset.pack = itemId(p, cat);
+        var top = el("span", "pt-top");
+        var pt = el("span", "pt-title", p.title);
+        pt.appendChild(icon("ext"));
+        top.appendChild(pt);
+        top.appendChild(el("span", "pt-note", fileNote(p) || hostNote(p.url)));
+        tile.appendChild(top);
+        if (p.summary) tile.appendChild(el("p", "pt-summary", p.summary));
+        var dl = el("span", "pt-dl");
+        dl.appendChild(icon("download"));
+        var pfmt = (p.format || extOf(p.url) || "").toLowerCase();
+        dl.appendChild(document.createTextNode(pfmt ? "下载 " + pfmt.toUpperCase() : "下载"));
+        tile.appendChild(dl);
+        grid.appendChild(tile);
       });
-      page.appendChild(packList);
-    }
-
-    const list = el("section", "entry-list");
-    let hasEntries = false;
-    if (item.url) {
-      list.appendChild(el("h3", "", "相关入口"));
-      const mainBits = [];
-      const mainNote = fileNote(item) || hostNote(item.url);
-      if (mainNote) mainBits.push(mainNote);
-      if (item.extractCode) mainBits.push("提取码 " + item.extractCode);
-      if (item.expiry) mainBits.push(item.expiry);
-      list.appendChild(entryLink(item.urlLabel || "资料下载", item.url, mainBits.join(" · "), true));
-      hasEntries = true;
-    }
-
-    (item.links || []).forEach(function (link) {
-      if (!link || !link.url || !link.label) return;
-      if (!hasEntries) list.appendChild(el("h3", "", "相关入口"));
-      const note = link.note || hostNote(link.url);
-      list.appendChild(entryLink(link.label, link.url, note));
-      hasEntries = true;
-    });
-    if (hasEntries) page.appendChild(list);
-    mainEl.appendChild(page);
-  }
-
-  function renderMissing(kind) {
-    setDocumentTitle("未找到");
-    renderStats();
-    const page = el("div", "page-head");
-    page.appendChild(backLink("#/", "返回首页"));
-    page.appendChild(el("p", "group-kicker", kind === "category" ? "NOT FOUND / CATEGORY" : "NOT FOUND / ITEM"));
-    page.appendChild(el("h2", "", kind === "category" ? "没有这个分类。" : "没有这条目。"));
-    page.appendChild(el("p", "group-desc", "可能是编号改过了，回首页找找看。"));
-    mainEl.appendChild(page);
-  }
-
-  let packFocus = null;
-
-  function focusPack() {
-    const target = packFocus;
-    packFocus = null;
-    if (!target) return false;
-    try {
-      target.focus({ preventScroll: true });
-    } catch (err) {
-      target.focus();
-    }
-    target.scrollIntoView({ block: "center" });
-    return true;
-  }
-
-  function render() {
-    const route = parseRoute();
-    mainEl.innerHTML = "";
-    packFocus = null;
-
-    let view = route.name;
-    if (route.name === "home" && norm(qEl.value)) view = "search";
-    mainEl.dataset.view = view;
-    document.body.classList.toggle("is-subpage", route.name !== "home");
-
-    if (route.name === "category") {
-      const cat = findCategory(route.id);
-      setActiveChip(cat ? cat.id : route.id);
-      if (!cat) renderMissing("category");
-      else renderCategory(cat);
-    } else if (route.name === "item") {
-      const found = findItem(route.id);
-      setActiveChip(found ? found.cat.id : "");
-      if (!found) renderMissing("item");
-      else renderItem(found);
+      sec.appendChild(grid);
+      doc.appendChild(sec);
     } else {
-      setActiveChip("");
-      renderHome();
+      var cols = el("div", "dc-cols");
+      /* 说明区：元信息 + 标签（摘要只在页头出现一次，不重复目录、不虚构内容） */
+      var info = el("section", "dc-section dc-col-info");
+      info.appendChild(el("h3", "", "资料说明"));
+      var infoMeta = el("div", "dc-meta");
+      if (it.source) infoMeta.appendChild(metaRow("来源", it.source));
+      if (it.updated) infoMeta.appendChild(metaRow("更新", fmtDate(it.updated)));
+      if (it.size || it.format || extOf(it.url)) infoMeta.appendChild(metaRow("文件", fileNote(it)));
+      if (it.extractCode) infoMeta.appendChild(metaRow("提取码", it.extractCode));
+      if (it.expiry) infoMeta.appendChild(metaRow("有效期", it.expiry));
+      if (infoMeta.children.length) info.appendChild(infoMeta);
+      if (it.tags && it.tags.length) {
+        var tags2 = el("ul", "dc-tags");
+        it.tags.forEach(function (t) { tags2.appendChild(el("li", "", t)); });
+        info.appendChild(tags2);
+      }
+      cols.appendChild(info);
+
+      /* 操作区：主链接 + 附加入口 */
+      var actions = el("div", "dc-col-actions");
+      var hasEntry = false;
+      var list = el("section", "dc-section");
+      if (it.url) {
+        list.appendChild(el("h3", "", it.urlLabel === "打开工具" ? "在线使用" : "主下载"));
+        var bits = [];
+        var note = fileNote(it) || hostNote(it.url);
+        if (note) bits.push(note);
+        if (it.extractCode) bits.push("提取码 " + it.extractCode);
+        if (it.expiry) bits.push(it.expiry);
+        list.appendChild(extLink(it.urlLabel || "资料下载", it.url, bits.join(" · "), true));
+        hasEntry = true;
+      }
+      var extra = (it.links || []).filter(function (l) { return l && l.url && l.label; });
+      if (extra.length) {
+        var list2 = hasEntry ? el("section", "dc-section") : list;
+        list2.appendChild(el("h3", "", "相关入口"));
+        extra.forEach(function (link) {
+          list2.appendChild(extLink(link.label, link.url, link.note || hostNote(link.url)));
+        });
+        if (hasEntry) { actions.appendChild(list); actions.appendChild(list2); }
+        else actions.appendChild(list2);
+        hasEntry = true;
+      } else if (hasEntry) {
+        actions.appendChild(list);
+      }
+      if (hasEntry) cols.appendChild(actions);
+      doc.appendChild(cols);
     }
 
-    requestAnimationFrame(moveInk);
+    /* —— 页脚：复制链接 + ID —— */
+    var foot = el("div", "dc-foot");
+    var copy = el("button", "copy-link", "复制本页链接");
+    copy.type = "button";
+    var timer = 0;
+    copy.addEventListener("click", function () {
+      copyText(location.href).then(function () {
+        copy.textContent = "已复制";
+        copy.classList.add("is-done");
+      }, function () {
+        copy.textContent = "复制失败，请手动复制地址栏";
+      }).then(function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          copy.textContent = "复制本页链接";
+          copy.classList.remove("is-done");
+        }, 1800);
+      });
+    });
+    foot.appendChild(copy);
+    foot.appendChild(el("span", "dc-id", "ID / " + itemId(it, cat)));
+    doc.appendChild(foot);
+
+    detailBody.appendChild(doc);
+    detailScroll.scrollTop = 0;
+    /* 手机详情层的开合只由用户动作（selectItem/locate/hash 直达）控制，
+       渲染本身不改层状态，避免步进/轻量更新时误关或误开。 */
   }
 
-  window.addEventListener("hashchange", function () {
-    const activeBefore = document.activeElement;
-    const focusWasInMain = !!(activeBefore && activeBefore !== document.body && mainEl.contains(activeBefore));
+  /* ── 全量渲染 ── */
+  function render(opts) {
+    opts = opts || {};
+    renderTrigger();
+    renderCats();
+    renderResults();
+    renderOutline();
+    renderDetail();
+    document.title = (state.sel && findItem(state.sel) ? findItem(state.sel).item.title + " · " : "") +
+      (site.title || "电创导航");
+    if (!opts.keepHash) writeHash();
+    syncDetailInert();
+  }
+
+  /* ── 行为 ── */
+  function selectCategory(id) {
+    state.cat = id;
+    state.sel = null;
+    var wasDrawer = drawerOpen;
+    var wasDetail = body.classList.contains("detail-open");
+    closeDrawer(false);
+    body.classList.remove("detail-open");
     render();
-    if (!focusPack()) {
-      window.scrollTo(0, 0);
-      // 卡片被重新渲染后焦点会掉到 body，交给主区域继续键盘浏览
-      if (focusWasInMain) {
-        try {
-          mainEl.focus({ preventScroll: true });
-        } catch (err) {
-          mainEl.focus();
-        }
+    resultsScroll.scrollTop = 0;
+    if (isMobile()) {
+      var delay = (wasDrawer || wasDetail) && !mqReduce.matches ? 280 : 0;
+      setTimeout(function () {
+        if (wasDrawer || wasDetail) focusEl(resultsTitle);
+        else focusEl(catListEl.querySelector('.cat-btn[data-cat="' + CSS.escape(id) + '"]') || resultsTitle);
+      }, delay);
+    }
+  }
+
+  function selectItem(id, opts) {
+    opts = opts || {};
+    var found = findItem(id);
+    if (!found) return;
+    state.sel = itemId(found.item, found.cat);
+    if (opts.syncCat) state.cat = found.cat.id;
+    var inList = resultListEl.querySelector('[data-item="' + CSS.escape(state.sel) + '"]');
+    if (inList && !opts.syncCat && !opts.forceRender) {
+      renderKeepListFocus(state.sel);
+      if (opts.focus) focusEl(inList);
+      if (opts.scrollIntoView) inList.scrollIntoView({ block: "nearest" });
+    } else {
+      render();
+      var card = resultListEl.querySelector('[data-item="' + CSS.escape(state.sel) + '"]');
+      if (card) {
+        if (opts.focus) focusEl(card);
+        if (opts.scrollIntoView) card.scrollIntoView({ block: "nearest" });
       }
     }
-    onScroll();
+    if (isMobile() && !drawerOpen) {
+      body.classList.add("detail-open");
+      syncDetailInert();
+      if (opts.from !== "step") lastListTrigger = state.sel;
+      if (opts.from !== "step" && !keyboardNav) {
+        setTimeout(function () {
+          if (!drawerOpen && body.classList.contains("detail-open")) focusEl($("detail-title") || detailBack);
+        }, mqReduce.matches ? 0 : 280);
+      }
+    }
+  }
+
+  /* ── 目录资料包定位：只查看不下载 ──
+   * 点击/Enter/Space → 选中父合集（如未选中）→ 关移动抽屉（如开着）→
+   * 右栏/手机详情滚动到对应资料包瓦片并短暂高亮。不触发任何外链/下载。 */
+  var locatedPack = null;
+  var locateParent = null;
+  var locateTimer = 0;
+  function locatePack(parentId, partId) {
+    var found = findItem(parentId);
+    if (!found) return;
+    locatedPack = partId;
+    locateParent = parentId;
+    var wasDrawer = drawerOpen;
+    if (wasDrawer) closeDrawer(false);
+    /* 抽屉里点子包时父合集可能尚未选中：先静默选中（不抢焦点），
+       让详情渲染出资料包瓦片，再由下面的定位逻辑滚动+聚焦。 */
+    if (state.sel !== parentId) {
+      state.sel = parentId;
+      state.cat = found.cat.id;
+      render();
+    } else {
+      renderKeepListFocus(parentId); /* 重绘目录以带上 is-located */
+    }
+    if (isMobile()) {
+      body.classList.add("detail-open");
+      syncDetailInert();
+      lastListTrigger = parentId;
+    }
+    var delay = isMobile() && !mqReduce.matches ? 300 : 0;
+    setTimeout(function () {
+      var tile = detailBody.querySelector('.pack-tile[data-pack="' + CSS.escape(partId) + '"]');
+      if (!tile) return;
+      Array.prototype.forEach.call(detailBody.querySelectorAll(".pack-tile.is-located"), function (n) {
+        n.classList.remove("is-located");
+      });
+      tile.classList.add("is-located");
+      /* 只滚动详情自己的滚动容器，避免 scrollIntoView 连带滚动祖先 */
+      var tr = tile.getBoundingClientRect();
+      var sr = detailScroll.getBoundingClientRect();
+      var target = detailScroll.scrollTop + (tr.top - sr.top) - (detailScroll.clientHeight - tr.height) / 2;
+      detailScroll.scrollTo({ top: Math.max(0, target), behavior: mqReduce.matches ? "auto" : "smooth" });
+      focusEl(tile);
+      clearTimeout(locateTimer);
+      locateTimer = setTimeout(function () {
+        tile.classList.remove("is-located");
+        locatedPack = null;
+        locateParent = null;
+        renderOutline();
+      }, 2400);
+    }, delay);
+  }
+
+  function closeDetail() {
+    if (!state.sel) return;
+    var id = state.sel;
+    var wasMobile = isMobile();
+    locatedPack = null;
+    locateParent = null;
+    if (wasMobile) {
+      /* 手机「返回列表」：只收层、保留选中（卡片红边标示刚才看的位置），
+         目录子包也随选中保持展开；桌面 × 才是取消选中回占位。 */
+      body.classList.remove("detail-open");
+      syncDetailInert();
+    } else {
+      state.sel = null;
+      body.classList.remove("detail-open");
+      render();
+      syncDetailInert();
+    }
+    var targetId = (wasMobile && lastListTrigger) || id;
+    lastListTrigger = null;
+    /* 焦点归还等详情层滑出、底层列表恢复可见后再执行；
+       期间抑制 focusin 联动，避免程序化聚焦触发意外行为。 */
+    function restore() {
+      var card = resultListEl.querySelector('[data-item="' + CSS.escape(targetId) + '"]') ||
+        resultListEl.querySelector('[data-item="' + CSS.escape(id) + '"]');
+      keyboardNav = true;
+      if (card) {
+        focusEl(card);
+        card.scrollIntoView({ block: "nearest" });
+      } else {
+        focusEl(resultsTitle);
+      }
+      setTimeout(function () { keyboardNav = false; }, 80);
+    }
+    if (wasMobile && !mqReduce.matches) setTimeout(restore, 300);
+    else restore();
+  }
+  var lastListTrigger = null;
+
+  function step(delta) {
+    var entries = currentResults();
+    if (!entries.length) return;
+    var idx = state.sel
+      ? entries.findIndex(function (e) { return itemId(e.item, e.cat) === state.sel; })
+      : -1;
+    var next = idx === -1 ? (delta > 0 ? 0 : entries.length - 1) : idx + delta;
+    if (next < 0 || next >= entries.length) return;
+    selectItem(itemId(entries[next].item, entries[next].cat), { from: "step", focus: !isMobile(), scrollIntoView: true });
+  }
+
+  /* ── 查询 ── */
+  function applyQuery(q) {
+    state.q = q;
+    if (state.sel) {
+      var entries = currentResults();
+      var still = entries.some(function (e) { return itemId(e.item, e.cat) === state.sel; });
+      if (!still) {
+        state.sel = null;
+        body.classList.remove("detail-open");
+      }
+    }
+    render();
+    resultsScroll.scrollTop = 0;
+  }
+  function clearQuery() {
+    if (!state.q) return;
+    applyQuery("");
+    focusEl(triggerEl);
+  }
+  qClear.addEventListener("click", clearQuery);
+
+  /* ══════════ 命令面板 ══════════ */
+  var paletteOpen = false;
+  var pFilterCat = "";       // 面板内分类筛选（"" = 全部），独立于工作台分类
+  var pResults = [];
+  var pActiveIdx = -1;
+  var paletteReturnFocus = null;
+
+  function buildFilters() {
+    pFilters.textContent = "";
+    var defs = [{ id: "", name: "全部", n: totalItems }];
+    categories.forEach(function (cat) {
+      var n = published(cat).length;
+      if (n > 0) defs.push({ id: cat.id, name: cat.name, n: n });
+    });
+    defs.forEach(function (d) {
+      var chip = el("button", "filter-chip" + (pFilterCat === d.id ? " is-active" : ""));
+      chip.type = "button";
+      chip.setAttribute("aria-pressed", pFilterCat === d.id ? "true" : "false");
+      chip.appendChild(document.createTextNode(d.name));
+      chip.appendChild(el("span", "n", String(d.n)));
+      chip.addEventListener("click", function () {
+        pFilterCat = d.id;
+        buildFilters();
+        runPaletteSearch();
+        focusEl(pInput);
+      });
+      pFilters.appendChild(chip);
+    });
+  }
+
+  function matchScore(entry, tokens) {
+    var score = 0;
+    var title = norm(entry.item.title);
+    var hay = haystack(entry);
+    for (var i = 0; i < tokens.length; i++) {
+      var t = tokens[i];
+      if (hay.indexOf(t) === -1) return -1;
+      score += title.indexOf(t) !== -1 ? 10 : 1;
+    }
+    return score;
+  }
+  function entryOrder(e) {
+    return categories.indexOf(e.cat) * 1000 + published(e.cat).indexOf(e.item);
+  }
+  function runPaletteSearch() {
+    var tokens = tokenize(pInput.value);
+    var pool = pFilterCat ? allEntries.filter(function (e) { return e.cat.id === pFilterCat; }) : allEntries;
+    if (!tokens.length) {
+      pResults = pool.slice().sort(function (a, b) {
+        var da = a.item.updated || "", db = b.item.updated || "";
+        if (da !== db) return da < db ? 1 : -1;
+        return entryOrder(b) - entryOrder(a);
+      });
+    } else {
+      pResults = pool.map(function (e) { return { e: e, s: matchScore(e, tokens) }; })
+        .filter(function (r) { return r.s >= 0; })
+        .sort(function (a, b) { return b.s - a.s || entryOrder(b.e) - entryOrder(a.e); })
+        .map(function (r) { return r.e; });
+    }
+    pActiveIdx = pResults.length ? 0 : -1;
+    renderPaletteResults(tokens);
+  }
+
+  function renderPaletteResults(tokens) {
+    /* 重建列表前显式清掉 aria-activedescendant：旧 opt-N 节点即将销毁，
+       若残留指向已脱离 DOM 的 id，部分浏览器会把随后的鼠标点击判为无效。 */
+    pInput.removeAttribute("aria-activedescendant");
+    pList.textContent = "";
+    pResults.forEach(function (e, i) {
+      var li = el("li", "palette-option" + (i === pActiveIdx ? " is-active" : ""));
+      li.id = "opt-" + i;
+      li.setAttribute("role", "option");
+      li.setAttribute("aria-selected", i === pActiveIdx ? "true" : "false");
+      var ic = el("span", "opt-icon");
+      ic.appendChild(icon(e.cat.icon || "book"));
+      var main = el("span", "opt-main");
+      var title = el("span", "opt-title");
+      highlight(title, e.item.title, pInput.value);
+      main.appendChild(title);
+      var packs = packItems(e.item);
+      var subText = packs.length
+        ? (packs.length + " 个资料包 · " + (e.item.summary || ""))
+        : (e.item.summary || "");
+      main.appendChild(el("span", "opt-sub", subText));
+      li.appendChild(ic);
+      li.appendChild(main);
+      li.appendChild(el("span", "opt-cat", e.cat.name));
+      /* 用闭包里的条目定位，不依赖下标：列表重建后旧节点上的事件仍指向正确条目 */
+      li.addEventListener("mousemove", function () {
+        var idx = pResults.indexOf(e);
+        if (idx >= 0 && pActiveIdx !== idx) { pActiveIdx = idx; syncPaletteActive(false); }
+      });
+      li.addEventListener("click", function (ev) {
+        var idx = pResults.indexOf(e);
+        if (idx < 0) return;
+        pActiveIdx = idx;
+        syncPaletteActive(false);
+        if (ev.ctrlKey || ev.metaKey) openActiveDirect();
+        else locateActive();
+      });
+      pList.appendChild(li);
+    });
+    var has = pResults.length > 0;
+    pList.hidden = !has;
+    pEmpty.hidden = has;
+    if (!has) {
+      pEmpty.textContent = "";
+      var line = el("span");
+      line.appendChild(document.createTextNode("没有找到匹配「"));
+      line.appendChild(el("b", null, pInput.value.trim() || "（当前分类）"));
+      line.appendChild(document.createTextNode("」的资料。"));
+      pEmpty.appendChild(line);
+      pEmpty.appendChild(el("span", "empty-tip", "试试更短的关键词，或切换上方分类；也可以把想要的资料发给维护人补充。"));
+      pInput.removeAttribute("aria-activedescendant");
+    }
+    pCount.textContent = pResults.length + " 条";
+    syncPaletteActive(true);
+  }
+
+  function syncPaletteActive(scroll) {
+    var opts = pList.children;
+    for (var i = 0; i < opts.length; i++) {
+      var on = i === pActiveIdx;
+      opts[i].classList.toggle("is-active", on);
+      opts[i].setAttribute("aria-selected", on ? "true" : "false");
+    }
+    if (pActiveIdx >= 0 && opts[pActiveIdx]) {
+      pInput.setAttribute("aria-activedescendant", opts[pActiveIdx].id);
+      if (scroll) {
+        var o = opts[pActiveIdx].getBoundingClientRect();
+        var l = pList.getBoundingClientRect();
+        if (o.top < l.top) pList.scrollTop -= (l.top - o.top) + 4;
+        else if (o.bottom > l.bottom) pList.scrollTop += (o.bottom - l.bottom) + 4;
+      }
+    } else {
+      pInput.removeAttribute("aria-activedescendant");
+    }
+  }
+  function movePaletteActive(delta) {
+    if (!pResults.length) return;
+    pActiveIdx = (pActiveIdx + delta + pResults.length) % pResults.length;
+    syncPaletteActive(true);
+  }
+
+  function openPalette() {
+    if (paletteOpen) { focusEl(pInput); pInput.select(); return; }
+    if (drawerOpen) closeDrawer(false);
+    paletteOpen = true;
+    paletteReturnFocus = document.activeElement;
+    /* 面板预填当前查询；分类筛选默认「全部」（全局搜索），当前分类作为可见 chip */
+    pInput.value = state.q;
+    pFilterCat = "";
+    overlay.hidden = false;
+    buildFilters();
+    runPaletteSearch();
+    setInert($("app"), true);
+    focusEl(pInput);
+    pInput.select();
+  }
+  function closePalette(restore) {
+    if (!paletteOpen) return;
+    paletteOpen = false;
+    overlay.hidden = true;
+    setInert($("app"), false);
+    syncDetailInert();
+    if (restore !== false) {
+      var ret = paletteReturnFocus;
+      var usable = ret && document.contains(ret) && ret.getClientRects().length &&
+        getComputedStyle(ret).visibility !== "hidden";
+      focusEl(usable ? ret : triggerEl);
+    }
+  }
+
+  /* Enter / 鼠标点选：关闭面板 → 三栏定位到所选条目。
+   * 查询上下文规则：面板输入词成为工作台查询；分类切到条目所属分类，
+   * 保证「查询 + 分类」组合下该条目必然出现在中栏列表里（可理解、可复现）。 */
+  function locateActive() {
+    if (pActiveIdx < 0 || !pResults[pActiveIdx]) return;
+    var e = pResults[pActiveIdx];
+    var id = itemId(e.item, e.cat);
+    var q = pInput.value.trim();
+    closePalette(false);
+    state.q = q;
+    state.cat = e.cat.id;
+    state.sel = id;
+    render();
+    resultsScroll.scrollTop = 0;
+    var card = resultListEl.querySelector('[data-item="' + CSS.escape(id) + '"]');
+    if (card) card.scrollIntoView({ block: "nearest" });
+    if (isMobile()) {
+      body.classList.add("detail-open");
+      syncDetailInert();
+      lastListTrigger = id;
+      setTimeout(function () {
+        if (body.classList.contains("detail-open")) focusEl($("detail-title") || detailBack);
+      }, mqReduce.matches ? 0 : 280);
+    } else {
+      /* 桌面：焦点落在定位到的列表卡片上，↑↓ 可继续比较 */
+      keyboardNav = true;
+      if (card) focusEl(card);
+      keyboardNav = false;
+    }
+    showToast("已定位：" + e.item.title + (q ? "（查询「" + q + "」）" : ""));
+  }
+
+  /* Ctrl/Cmd+Enter：直接打开真实主链接，不改工作台状态 */
+  function primaryUrl(e) {
+    if (e.item.url) return resolveUrl(e.item.url);
+    if (e.item.allUrl) return resolveUrl(e.item.allUrl);
+    var parts = packItems(e.item);
+    return parts.length ? resolveUrl(parts[0].url) : "";
+  }
+  function openActiveDirect() {
+    if (pActiveIdx < 0 || !pResults[pActiveIdx]) return;
+    var e = pResults[pActiveIdx];
+    var url = primaryUrl(e);
+    if (!url) return;
+    window.open(url, "_blank", "noopener");
+    showToast("已在新标签页打开：" + e.item.title);
+  }
+
+  triggerEl.addEventListener("click", openPalette);
+  pClose.addEventListener("click", function () { closePalette(true); });
+  overlay.addEventListener("mousedown", function (e) {
+    if (e.target === overlay) closePalette(true);
+  });
+  pInput.addEventListener("input", runPaletteSearch);
+
+  /* 面板内 Tab 循环 */
+  function visibleFocusables(container) {
+    var nodes = container.querySelectorAll('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])');
+    var vis = [];
+    Array.prototype.forEach.call(nodes, function (n) {
+      if (!n.getClientRects().length) return;
+      if (getComputedStyle(n).visibility === "hidden") return;
+      vis.push(n);
+    });
+    return vis;
+  }
+  function trapTab(e, container) {
+    var vis = visibleFocusables(container);
+    if (!vis.length) return;
+    var cur = document.activeElement;
+    var idx = vis.indexOf(cur);
+    if (e.shiftKey) {
+      if (idx <= 0) { e.preventDefault(); focusEl(vis[vis.length - 1]); }
+    } else {
+      if (idx === -1 || idx === vis.length - 1) { e.preventDefault(); focusEl(vis[0]); }
+    }
+  }
+
+  /* ── 抽屉（手机） ── */
+  var drawerOpen = false;
+  var drawerReturnFocus = null;
+  function openDrawer() {
+    if (!isMobile() || drawerOpen) return;
+    drawerOpen = true;
+    drawerReturnFocus = document.activeElement;
+    body.classList.add("drawer-open");
+    scrim.hidden = false;
+    navToggle.setAttribute("aria-expanded", "true");
+    sidebarEl.setAttribute("role", "dialog");
+    sidebarEl.setAttribute("aria-modal", "true");
+    sidebarEl.setAttribute("aria-label", "分类与资料目录");
+    sidebarEl.removeAttribute("aria-hidden");
+    setInert($("results"), true);
+    setInert($("detail"), true);
+    setInert(document.querySelector(".topbar"), true);
+    requestAnimationFrame(function () {
+      var active = sidebarEl.querySelector(".cat-btn.is-active") || sidebarEl.querySelector(".cat-btn");
+      focusEl(active || sidebarClose);
+    });
+    setTimeout(function () {
+      if (drawerOpen && !sidebarEl.contains(document.activeElement)) {
+        var active = sidebarEl.querySelector(".cat-btn.is-active") || sidebarEl.querySelector(".cat-btn");
+        focusEl(active || sidebarClose);
+      }
+    }, mqReduce.matches ? 0 : 280);
+  }
+  function closeDrawer(restoreFocus) {
+    if (!drawerOpen) return;
+    drawerOpen = false;
+    body.classList.remove("drawer-open");
+    navToggle.setAttribute("aria-expanded", "false");
+    sidebarEl.removeAttribute("role");
+    sidebarEl.removeAttribute("aria-modal");
+    setInert($("results"), false);
+    setInert(document.querySelector(".topbar"), false);
+    syncDetailInert();
+    if (restoreFocus !== false) {
+      var target = drawerReturnFocus || navToggle;
+      setTimeout(function () { focusEl(target); }, 0);
+    }
+    setTimeout(function () { if (!drawerOpen) scrim.hidden = true; }, mqReduce.matches ? 0 : 260);
+    syncSidebarVisibility();
+  }
+  function setInert(node, on) {
+    if (!node) return;
+    if (on) node.setAttribute("inert", "");
+    else node.removeAttribute("inert");
+  }
+  function syncSidebarVisibility() {
+    if (isMobile() && !drawerOpen) sidebarEl.setAttribute("aria-hidden", "true");
+    else sidebarEl.removeAttribute("aria-hidden");
+  }
+  function syncDetailInert() {
+    if (paletteOpen) return; /* 面板打开时整个 app 已 inert */
+    if (isMobile()) {
+      var open = body.classList.contains("detail-open");
+      setInert($("results"), open || drawerOpen);
+      setInert(document.querySelector(".topbar"), open || drawerOpen);
+      setInert($("detail"), !open || drawerOpen);
+    } else {
+      setInert($("results"), false);
+      setInert(document.querySelector(".topbar"), false);
+      setInert($("detail"), false);
+    }
+    syncSidebarVisibility();
+  }
+  navToggle.addEventListener("click", openDrawer);
+  sidebarClose.addEventListener("click", function () { closeDrawer(true); });
+  scrim.addEventListener("click", function () { closeDrawer(true); });
+
+  sidebarEl.addEventListener("keydown", function (e) {
+    if (!drawerOpen || e.key !== "Tab") return;
+    trapTab(e, sidebarEl);
   });
 
-  render();
-  focusPack();
+  /* ── 详情栏控件 ── */
+  prevBtn.addEventListener("click", function () { step(-1); });
+  nextBtn.addEventListener("click", function () { step(1); });
+  detailClose.addEventListener("click", closeDetail);
+  detailBack.addEventListener("click", closeDetail);
 
-  let compact = false;
-  function onScroll() {
-    const sub = document.body.classList.contains("is-subpage");
-    const next = sub || window.scrollY > 72;
-    if (next === compact) return;
-    compact = next;
-    document.body.classList.toggle("is-compact", compact);
-    requestAnimationFrame(moveInk);
+  /* ── 列表键盘导航：↑↓ 移动即切换详情 ── */
+  var keyboardNav = false;
+  function renderKeepListFocus(id) {
+    Array.prototype.forEach.call(resultListEl.querySelectorAll(".result-card"), function (c) {
+      var on = c.dataset.item === id;
+      c.classList.toggle("is-selected", on);
+      c.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    renderOutline();
+    renderDetail();
+    writeHash();
+    syncDetailInert();
+    document.title = (state.sel && findItem(state.sel) ? findItem(state.sel).item.title + " · " : "") +
+      (site.title || "电创导航");
   }
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
+  resultListEl.addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Home" && e.key !== "End") return;
+    var cards = Array.prototype.slice.call(resultListEl.querySelectorAll(".result-card"));
+    if (!cards.length) return;
+    var i = cards.indexOf(document.activeElement);
+    var next;
+    if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = cards.length - 1;
+    else if (e.key === "ArrowDown") next = i === -1 ? 0 : Math.min(i + 1, cards.length - 1);
+    else next = i === -1 ? cards.length - 1 : Math.max(i - 1, 0);
+    e.preventDefault();
+    var card = cards[next];
+    var id = card.dataset.item;
+    state.sel = id;
+    keyboardNav = true;
+    renderKeepListFocus(id);
+    keyboardNav = false;
+    focusEl(card);
+    card.scrollIntoView({ block: "nearest" });
+  });
+  resultListEl.addEventListener("focusin", function (e) {
+    if (keyboardNav || pointerHeld) return;
+    var card = e.target.closest(".result-card");
+    if (!card || card.dataset.item === state.sel) return;
+    state.sel = card.dataset.item;
+    keyboardNav = true;
+    renderKeepListFocus(state.sel);
+    keyboardNav = false;
+    focusEl(card);
+    if (isMobile() && !drawerOpen) {
+      lastListTrigger = state.sel;
+      body.classList.add("detail-open");
+      syncDetailInert();
+      setTimeout(function () {
+        if (!drawerOpen && body.classList.contains("detail-open")) focusEl($("detail-title") || detailBack);
+      }, mqReduce.matches ? 0 : 280);
+    }
+  });
+  var pointerHeld = false;
+  document.addEventListener("pointerdown", function () { pointerHeld = true; }, true);
+  function releasePointer() { setTimeout(function () { pointerHeld = false; }, 60); }
+  document.addEventListener("pointerup", releasePointer, true);
+  document.addEventListener("pointercancel", releasePointer, true);
 
+  /* ── 全局快捷键 ── */
+  document.addEventListener("keydown", function (e) {
+    var key = e.key;
+
+    /* Ctrl/Cmd+K：开关命令面板 */
+    if ((key === "k" || key === "K") && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (paletteOpen) closePalette(true);
+      else openPalette();
+      return;
+    }
+    /* "/"：非输入态唤起面板 */
+    if (key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing && !paletteOpen) {
+      var t = e.target, tag = t && t.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+      if (drawerOpen) return;
+      e.preventDefault();
+      openPalette();
+      return;
+    }
+
+    /* 面板打开时：面板内按键 */
+    if (paletteOpen) {
+      if (key === "Escape") { e.preventDefault(); closePalette(true); return; }
+      if (key === "ArrowDown") { e.preventDefault(); movePaletteActive(1); return; }
+      if (key === "ArrowUp") { e.preventDefault(); movePaletteActive(-1); return; }
+      if (key === "Home" && e.ctrlKey) { e.preventDefault(); pActiveIdx = 0; syncPaletteActive(true); return; }
+      if (key === "End" && e.ctrlKey) { e.preventDefault(); pActiveIdx = pResults.length - 1; syncPaletteActive(true); return; }
+      if (key === "Enter") {
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey) openActiveDirect();
+        else locateActive();
+        return;
+      }
+      if (key === "Tab") { trapTab(e, palette); return; }
+      return;
+    }
+
+    if (key === "Escape") {
+      if (drawerOpen) { e.preventDefault(); closeDrawer(true); return; }
+      if (state.q && e.target !== pInput) { clearQuery(); return; }
+      if (state.sel) { e.preventDefault(); closeDetail(); return; }
+      return;
+    }
+    /* 焦点不在输入框/列表时的 ↑↓：直接步进条目 */
+    if ((key === "ArrowDown" || key === "ArrowUp") && !drawerOpen) {
+      var tt = e.target, tg = tt && tt.tagName;
+      if (tg === "INPUT" || tg === "TEXTAREA" || tg === "SELECT" || (tt && tt.isContentEditable)) return;
+      if (tt && tt.closest && tt.closest(".result-list")) return;
+      if (tt && tt.closest && tt.closest(".sidebar")) return;
+      e.preventDefault();
+      step(key === "ArrowDown" ? 1 : -1);
+    }
+  });
+
+  /* ── 跳过导航 / 品牌回首页 ── */
+  $("skip-link").addEventListener("click", function (e) {
+    e.preventDefault();
+    focusEl(resultsTitle);
+    resultsScroll.scrollTop = 0;
+  });
+  $("brand-home").addEventListener("click", function (e) {
+    e.preventDefault();
+    state.q = "";
+    selectCategory("");
+  });
+
+  /* ── hash 与响应式 ── */
+  window.addEventListener("hashchange", function () {
+    if (hashFallbackPending > 0) { hashFallbackPending--; return; }
+    readHash();
+    render({ keepHash: true });
+    resultsScroll.scrollTop = 0;
+    if (state.sel) {
+      var card = resultListEl.querySelector('[data-item="' + CSS.escape(state.sel) + '"]');
+      if (card) card.scrollIntoView({ block: "nearest" });
+      if (isMobile() && !drawerOpen) {
+        body.classList.add("detail-open");
+        syncDetailInert();
+        setTimeout(function () { focusEl($("detail-title") || detailBack); }, mqReduce.matches ? 0 : 280);
+      }
+      /* 资料包深链：父合集渲染完成后定位到该包（手机由 locatePack 开层并聚焦瓦片） */
+      applyPendingPart();
+    } else {
+      body.classList.remove("detail-open");
+      syncDetailInert();
+    }
+  });
+  function onBreakpoint() {
+    if (!isMobile()) {
+      if (drawerOpen) closeDrawer(false);
+      body.classList.remove("drawer-open");
+      scrim.hidden = true;
+    }
+    syncDetailInert();
+  }
+  if (mqMobile.addEventListener) mqMobile.addEventListener("change", onBreakpoint);
+  else mqMobile.addListener(onBreakpoint);
+
+  /* ── 初始化 ── */
+  $("top-stats").innerHTML = "";
+  var s1 = el("span"); s1.appendChild(document.createTextNode("条目 ")); s1.appendChild(el("b", "", pad2(totalItems)));
+  var s2 = el("span"); s2.appendChild(document.createTextNode("资料包 ")); s2.appendChild(el("b", "", pad2(totalPacks)));
+  var s3 = el("span"); s3.appendChild(document.createTextNode("分类 ")); s3.appendChild(el("b", "", pad2(categories.length)));
+  $("top-stats").appendChild(s1); $("top-stats").appendChild(s2); $("top-stats").appendChild(s3);
+
+  /* ══════════ 栏目分隔条：Pointer 拖拽 + 双击复位 ══════════
+   * 宽度写入 .workbench 的 CSS 变量（--col-left / --col-mid），右栏 flex 自适应。
+   * 只改 DOM 样式变量，不进 state/render，搜索/切换条目不会复位。
+   * min/max 保证右栏至少保留 320px，不产生横向溢出。
+   * 不支持键盘调宽：手柄不可 Tab 聚焦，无方向键/Home/End 逻辑；
+   * aria-valuenow 等仅作为当前宽度的只读描述同步。 */
+  var workbenchEl = document.querySelector(".workbench");
+  var RESIZER_W = 7;
+  var MIN_DETAIL = 320;
+  var colDefs = {
+    left: { el: $("resize-left"), varName: "--col-left", def: 264, min: 200, max: 420 },
+    mid: { el: $("resize-mid"), varName: "--col-mid", def: 400, min: 280, max: 560 }
+  };
+  function colVal(key) {
+    var v = parseFloat(workbenchEl.style.getPropertyValue(colDefs[key].varName));
+    if (!isNaN(v)) return v;
+    return parseFloat(getComputedStyle(workbenchEl).getPropertyValue(colDefs[key].varName)) || colDefs[key].def;
+  }
+  function colBounds(key) {
+    var d = colDefs[key];
+    var total = workbenchEl.getBoundingClientRect().width;
+    var other = key === "left" ? colVal("mid") : colVal("left");
+    /* 右栏保底 MIN_DETAIL：两条分隔条共占 2×RESIZER_W */
+    var room = total - other - MIN_DETAIL - RESIZER_W * 2;
+    return { min: d.min, max: Math.max(d.min, Math.min(d.max, Math.floor(room))) };
+  }
+  function setCol(key, px) {
+    var b = colBounds(key);
+    var v = Math.round(Math.min(b.max, Math.max(b.min, px)));
+    workbenchEl.style.setProperty(colDefs[key].varName, v + "px");
+    var h = colDefs[key].el;
+    h.setAttribute("aria-valuemin", String(b.min));
+    h.setAttribute("aria-valuemax", String(b.max));
+    h.setAttribute("aria-valuenow", String(v));
+    return v;
+  }
+  function syncResizerAria() {
+    if (isMobile()) return;
+    setCol("left", colVal("left"));
+    setCol("mid", colVal("mid"));
+  }
+  Object.keys(colDefs).forEach(function (key) {
+    var d = colDefs[key];
+    var h = d.el;
+    var dragging = false;
+    var startX = 0, startW = 0;
+    h.addEventListener("pointerdown", function (e) {
+      if (isMobile()) return;
+      dragging = true;
+      startX = e.clientX;
+      startW = colVal(key);
+      h.classList.add("is-dragging");
+      body.classList.add("is-resizing");
+      try { h.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+    });
+    h.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      setCol(key, startW + (e.clientX - startX));
+    });
+    function endDrag(e) {
+      if (!dragging) return;
+      dragging = false;
+      h.classList.remove("is-dragging");
+      body.classList.remove("is-resizing");
+      try { h.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
+    h.addEventListener("pointerup", endDrag);
+    h.addEventListener("pointercancel", endDrag);
+    h.addEventListener("dblclick", function () {
+      if (isMobile()) return;
+      setCol(key, d.def);
+    });
+  });
+  window.addEventListener("resize", syncResizerAria);
+
+  readHash();
+  var deepLink = !!state.sel;
+  /* 默认：桌面自动选中第一条让右栏立即可读；手机落在列表页，不自动弹详情。 */
+  if (!state.sel && !state.cat && !norm(state.q) && !location.hash.replace(/^#\/?$/, "") && !isMobile()) {
+    var entries0 = currentResults();
+    if (entries0.length) state.sel = itemId(entries0[0].item, entries0[0].cat);
+  }
+  render();
+  onBreakpoint();
+  syncResizerAria();
+  if (deepLink && isMobile()) {
+    body.classList.add("detail-open");
+    syncDetailInert();
+    focusEl($("detail-title") || detailBack);
+  }
+  /* 资料包深链冷加载：父合集已渲染，定位到该包（只定位不下载；
+     手机由 locatePack 开详情层并把焦点落到瓦片）。 */
+  applyPendingPart();
 })();
