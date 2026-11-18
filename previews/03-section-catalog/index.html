@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>电创导航 · 分区目录</title>
+  <meta name="description" content="电创导航方案 C 原型：目录锚点 + 分区目录流，单页浏览全部资料。">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f5f4ef">
+  <link rel="icon" href="assets/favicon.ico" sizes="32x32">
+  <link rel="icon" type="image/png" href="assets/favicon.png" sizes="48x48">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="catalog.css">
+</head>
+<body>
+  <a class="skip-link" href="#flow" id="skip-link">跳到资料目录</a>
+
+  <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <!-- Lucide icons (MIT) -->
+    <symbol id="i-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="16" height="16" x="4" y="4" rx="2"/><rect width="8" height="8" x="8" y="8" rx="1"/>
+      <path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
+    </symbol>
+    <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+    </symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/>
+    </symbol>
+    <symbol id="i-manual" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M8 7h6M8 11h8"/>
+    </symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+    </symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m6 9 6 6 6-6"/>
+    </symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+    </symbol>
+    <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+    </symbol>
+    <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+    </symbol>
+    <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m5 12 7-7 7 7M12 19V5"/>
+    </symbol>
+  </svg>
+
+  <header class="topbar" id="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#top" id="brand-home" aria-label="电创导航，回到页首">
+        <img src="assets/logo.png" width="30" height="30" alt="">
+        <span class="brand-name">电创导航</span>
+        <span class="brand-tag">分区目录</span>
+      </a>
+      <div class="search" role="search">
+        <label class="search-box" for="q">
+          <svg class="ic search-ic" aria-hidden="true"><use href="#i-search"/></svg>
+          <span class="visually-hidden">搜索全部资料</span>
+          <input id="q" type="search" placeholder="搜索名称、说明或标签…" autocomplete="off"
+                 enterkeyhint="search" aria-keyshortcuts="/" title="按 / 聚焦搜索，Esc 清除">
+        </label>
+        <button class="search-clear" id="q-clear" type="button" aria-label="清除搜索" hidden>✕</button>
+        <kbd class="search-kbd" aria-hidden="true">/</kbd>
+      </div>
+      <p class="topbar-stat" id="topbar-stat" aria-hidden="true"></p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" id="toc" aria-label="分区目录">
+      <p class="toc-title">目录 <span>CONTENTS</span></p>
+      <ol class="toc-list" id="toc-list"></ol>
+      <div class="toc-foot">
+        <p class="toc-progress" id="toc-progress" aria-hidden="true"></p>
+        <a class="toc-top" href="#top" data-anchor="top">
+          <svg class="ic" aria-hidden="true"><use href="#i-up"/></svg>回到页首
+        </a>
+      </div>
+    </nav>
+
+    <main class="flow" id="flow" tabindex="-1">
+      <noscript><p class="empty-note">本原型由 JavaScript 渲染真实数据，请启用后再查看。</p></noscript>
+
+      <section class="intro" id="sec-top" data-sec="top" aria-labelledby="intro-title">
+        <div class="intro-head">
+          <p class="kicker">大学生电子创新协会 · 资料总目</p>
+          <h1 id="intro-title">一页看全，逐区翻阅</h1>
+          <p class="intro-sub" id="intro-sub"></p>
+        </div>
+        <dl class="intro-stats" id="intro-stats"></dl>
+        <p class="intro-hint">左侧目录随滚动定位；点开条目行即可在原位看详情，外链一律新开标签，回来时不丢进度。</p>
+      </section>
+
+      <div class="search-status" id="search-status" role="status" hidden></div>
+
+      <div id="sections"></div>
+
+      <aside class="notice" role="note">
+        <span class="notice-tag">备注</span>
+        <p id="notice-text"></p>
+      </aside>
+
+      <footer class="foot">
+        <p>电创导航 · 方案 C 原型「目录锚点 + 分区目录流」</p>
+        <p class="foot-meta">按 <kbd>/</kbd> 搜索 · <kbd>Esc</kbd> 清除 · 数据来自 data/links.js 快照</p>
+      </footer>
+    </main>
+  </div>
+
+  <button class="toc-fab" id="toc-fab" type="button" aria-expanded="false" aria-controls="toc-sheet">
+    <svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>
+    <span class="fab-label">目录</span>
+    <span class="fab-current" id="fab-current"></span>
+  </button>
+
+  <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+  <div class="toc-sheet" id="toc-sheet" role="dialog" aria-modal="true" aria-label="分区目录" hidden>
+    <div class="sheet-head">
+      <p class="sheet-title">分区目录</p>
+      <button class="sheet-close" id="sheet-close" type="button" aria-label="关闭目录">✕</button>
+    </div>
+    <ol class="toc-list sheet-list" id="sheet-list"></ol>
+    <a class="toc-top sheet-top" href="#top" data-anchor="top">
+      <svg class="ic" aria-hidden="true"><use href="#i-up"/></svg>回到页首
+    </a>
+  </div>
+
+  <script src="links.js"></script>
+  <script src="catalog.js"></script>
+</body>
+</html>

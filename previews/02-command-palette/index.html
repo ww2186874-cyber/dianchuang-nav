@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>电创导航 · 方案 B：搜索 / 命令面板 + 悬浮预览</title>
+  <meta name="description" content="电创导航交互原型 B：以搜索和命令面板为主入口，键盘直达资料，悬浮或钉住详情预览。">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f4efe4">
+  <link rel="icon" href="assets/favicon.ico" sizes="32x32">
+  <link rel="icon" type="image/png" href="assets/favicon.png" sizes="48x48">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <!-- Lucide icons (MIT)，与正式站一致的分类图标 -->
+  <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <symbol id="i-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="16" height="16" x="4" y="4" rx="2"/>
+      <rect width="8" height="8" x="8" y="8" rx="1"/>
+      <path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
+    </symbol>
+    <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+    </symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="20" height="5" x="2" y="3" rx="1"/>
+      <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/>
+    </symbol>
+    <symbol id="i-manual" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+      <path d="M8 7h6M8 11h8"/>
+    </symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+    </symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 6 6 18M6 6l12 12"/>
+    </symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 17v5M9 10.8V6a3 3 0 0 1 6 0v4.8l2.4 2.4a1 1 0 0 1-.7 1.8H7.3a1 1 0 0 1-.7-1.8Z"/>
+    </symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+    </symbol>
+    <symbol id="i-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 10 4 15l5 5M20 4v7a4 4 0 0 1-4 4H4"/>
+    </symbol>
+  </svg>
+
+  <div class="bg" aria-hidden="true"><div class="bg-grid"></div></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <img src="assets/logo.png" width="34" height="34" alt="大学生电子创新协会标志">
+      <div class="brand-text">
+        <p class="org">大学生电子创新协会</p>
+        <h1>电创导航</h1>
+      </div>
+    </div>
+    <button class="palette-trigger" id="open-palette" type="button" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K /">
+      <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+      <span class="trigger-label">搜索资料、打开工具…</span>
+      <kbd class="trigger-kbd" aria-hidden="true">Ctrl K</kbd>
+    </button>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <section class="intro" aria-labelledby="intro-title">
+      <p class="kicker" aria-hidden="true">COMMAND / 直达资料</p>
+      <h2 id="intro-title">想找什么，直接敲。</h2>
+      <p class="lede" id="subtitle">实验室常用的板子、程序、课程与资料入口</p>
+      <button class="big-search" id="open-palette-2" type="button" aria-haspopup="dialog">
+        <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+        <span>输入名称、标签，比如「高数」「引脚」</span>
+        <kbd aria-hidden="true">/</kbd>
+      </button>
+      <p class="hint-line">
+        <kbd>↑</kbd><kbd>↓</kbd> 选择 · <kbd>Enter</kbd> 预览 · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 直接打开 · <kbd>Esc</kbd> 关闭
+      </p>
+    </section>
+
+    <section class="recent" aria-labelledby="recent-title">
+      <div class="sec-head">
+        <h3 id="recent-title">最近收录</h3>
+        <p class="sec-meta" id="stats"></p>
+      </div>
+      <ul class="recent-list" id="recent-list"></ul>
+      <noscript><p class="empty">本原型的条目由 JavaScript 渲染，请启用后再查看。</p></noscript>
+    </section>
+
+    <p class="notice" role="note" id="notice">想补充资料，发给维护人或提交到仓库即可。</p>
+  </main>
+
+  <footer class="site-footer">
+    <p>电创导航 · 方案 B 原型（命令面板 + 悬浮预览）</p>
+    <p class="foot-meta">按 <kbd>/</kbd> 或 <kbd>Ctrl K</kbd> 搜索</p>
+  </footer>
+
+  <!-- ===== 命令面板 ===== -->
+  <div class="overlay" id="palette-overlay" hidden>
+    <div class="palette" role="dialog" aria-modal="true" aria-labelledby="palette-title" id="palette">
+      <h2 class="visually-hidden" id="palette-title">搜索与命令面板</h2>
+      <div class="palette-input-row">
+        <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="palette-input" type="text" placeholder="搜索名称、说明或标签…" autocomplete="off" spellcheck="false"
+               role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="list" enterkeyhint="search">
+        <button class="icon-btn" id="palette-close" type="button" aria-label="关闭命令面板（Esc）" title="关闭（Esc）">
+          <svg class="ic" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div class="palette-filters" id="palette-filters" role="group" aria-label="按分类筛选"></div>
+      <ul class="palette-list" id="palette-list" role="listbox" aria-label="搜索结果"></ul>
+      <p class="palette-empty" id="palette-empty" hidden></p>
+      <div class="palette-foot" aria-hidden="true">
+        <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+        <span><kbd>Enter</kbd> 预览</span>
+        <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 打开</span>
+        <span><kbd>Ctrl</kbd>+<kbd>P</kbd> 钉住</span>
+        <span><kbd>Esc</kbd> 关闭</span>
+        <span class="foot-count" id="palette-count"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 详情预览：桌面悬浮卡 / 手机底部抽屉 ===== -->
+  <div class="preview-backdrop" id="preview-backdrop" hidden></div>
+  <aside class="preview" id="preview" role="dialog" aria-modal="false" aria-labelledby="preview-title" hidden>
+    <div class="drawer-grip" aria-hidden="true"></div>
+    <header class="preview-head">
+      <p class="preview-cat" id="preview-cat"></p>
+      <div class="preview-actions">
+        <button class="pin-btn" id="preview-pin" type="button" aria-pressed="false" title="钉住预览（P / Ctrl+P）">
+          <svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>
+          <span class="pin-label">钉住</span>
+        </button>
+        <button class="icon-btn" id="preview-close" type="button" aria-label="关闭预览（Esc）" title="关闭（Esc）">
+          <svg class="ic" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="preview-body" id="preview-body">
+      <h2 class="preview-title" id="preview-title" tabindex="-1"></h2>
+      <p class="preview-summary" id="preview-summary"></p>
+      <dl class="preview-meta" id="preview-meta"></dl>
+      <div class="preview-tags" id="preview-tags"></div>
+      <div class="preview-pack" id="preview-pack" hidden>
+        <h3 class="pack-title">资料包</h3>
+        <ul class="pack-list" id="pack-list"></ul>
+        <a class="pack-all" id="pack-all" target="_blank" rel="noopener noreferrer" hidden>
+          查看全部资料包（GitHub Release）
+          <svg class="ic" aria-hidden="true"><use href="#i-ext"/></svg>
+        </a>
+      </div>
+      <div class="preview-links" id="preview-links"></div>
+    </div>
+    <footer class="preview-foot">
+      <a class="primary-btn" id="preview-open" target="_blank" rel="noopener noreferrer">
+        <svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>
+        <span id="preview-open-label">资料下载</span>
+      </a>
+      <p class="preview-host" id="preview-host"></p>
+    </footer>
+  </aside>
+
+  <p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+
+  <script src="links-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

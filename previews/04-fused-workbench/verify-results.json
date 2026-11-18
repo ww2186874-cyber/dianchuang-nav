@@ -1,0 +1,1018 @@
+{
+  "total": 202,
+  "passed": 202,
+  "failed": 0,
+  "results": [
+    {
+      "name": "默认渲染 4 条真实条目",
+      "ok": true,
+      "detail": "4"
+    },
+    {
+      "name": "默认选中第一条且三栏同步",
+      "ok": true,
+      "detail": "{'list': 'jiben-gaoshu-y1', 'outline': 'jiben-gaoshu-y1', 'cat': '', 'detail': '技本高数 · 大一历年真题', 'step': '1 / 4', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/i/jiben-gaoshu-y1'}"
+    },
+    {
+      "name": "默认分类=全部",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "分类 7 项",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "步进器 1/4",
+      "ok": true,
+      "detail": "1 / 4"
+    },
+    {
+      "name": "品牌 logo 加载",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "DC Title 字体可用",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "无横向溢出 1440 默认",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "点击触发器打开面板",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "焦点在面板输入框",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "app 底层 inert",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "面板空查询显示 4 条",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "面板 aria-modal",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Esc 关闭面板",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Esc 后焦点归还触发器",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Esc 后工作状态不变",
+      "ok": true,
+      "detail": "{'before': {'list': 'jiben-gaoshu-y1', 'outline': 'jiben-gaoshu-y1', 'cat': '', 'detail': '技本高数 · 大一历年真题', 'step': '1 / 4', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/i/jiben-gaoshu-y1'}, 'after': {'list': 'jiben-gaoshu-y1', 'outline': 'jiben-gaoshu-y1', 'cat': '', 'detail': '技本高数 · 大一历年真题', 'step': '1 / 4', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/i/jiben-gaoshu-y1'}}"
+    },
+    {
+      "name": "Esc 后 inert 解除",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "/ 唤起面板",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "「高数」命中 1 条",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "面板高亮 mark",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Enter 后面板关闭",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Enter 后三栏定位到合集",
+      "ok": true,
+      "detail": "{'list': 'jiben-gaoshu-y1', 'outline': 'jiben-gaoshu-y1', 'cat': 'heritage', 'detail': '技本高数 · 大一历年真题', 'step': '1 / 1', 'trigger': '查询「高数」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/jiben-gaoshu-y1?q=%E9%AB%98%E6%95%B0'}"
+    },
+    {
+      "name": "查询上下文可见（触发器）",
+      "ok": true,
+      "detail": "查询「高数」 · 点击修改"
+    },
+    {
+      "name": "中栏搜索状态行",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "定位后焦点在列表卡片",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "hash 带查询快照",
+      "ok": true,
+      "detail": "#/i/jiben-gaoshu-y1?q=%E9%AB%98%E6%95%B0"
+    },
+    {
+      "name": "无横向溢出 1440 搜索态",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "清除后查询为空",
+      "ok": true,
+      "detail": "{'list': 'jiben-gaoshu-y1', 'outline': 'jiben-gaoshu-y1', 'cat': 'heritage', 'detail': '技本高数 · 大一历年真题', 'step': '1 / 1', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/i/jiben-gaoshu-y1'}"
+    },
+    {
+      "name": "清除后保留分类与选中",
+      "ok": true,
+      "detail": "{'list': 'jiben-gaoshu-y1', 'outline': 'jiben-gaoshu-y1', 'cat': 'heritage', 'detail': '技本高数 · 大一历年真题', 'step': '1 / 1', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/i/jiben-gaoshu-y1'}"
+    },
+    {
+      "name": "清除后焦点回触发器",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Ctrl+K 唤起面板",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "「引脚」命中 2 条",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "↓ 切换 active（aria-activedescendant）",
+      "ok": true,
+      "detail": "('opt-0', 'opt-1')"
+    },
+    {
+      "name": "↓ 末尾回绕",
+      "ok": true,
+      "detail": "opt-0"
+    },
+    {
+      "name": "跨分类定位：分类切到在线工具",
+      "ok": true,
+      "detail": "{'list': 'mspm0-pin-planner', 'outline': 'mspm0-pin-planner', 'cat': 'tools', 'detail': 'MSPM0 引脚规划器', 'step': '2 / 2', 'trigger': '查询「引脚」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/mspm0-pin-planner?q=%E5%BC%95%E8%84%9A'}"
+    },
+    {
+      "name": "跨分类定位：列表/目录/详情同步 MSPM0",
+      "ok": true,
+      "detail": "{'list': 'mspm0-pin-planner', 'outline': 'mspm0-pin-planner', 'cat': 'tools', 'detail': 'MSPM0 引脚规划器', 'step': '2 / 2', 'trigger': '查询「引脚」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/mspm0-pin-planner?q=%E5%BC%95%E8%84%9A'}"
+    },
+    {
+      "name": "跨分类后查询=引脚 且列表 2 条",
+      "ok": true,
+      "detail": "{'list': 'mspm0-pin-planner', 'outline': 'mspm0-pin-planner', 'cat': 'tools', 'detail': 'MSPM0 引脚规划器', 'step': '2 / 2', 'trigger': '查询「引脚」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/mspm0-pin-planner?q=%E5%BC%95%E8%84%9A'}"
+    },
+    {
+      "name": "步进器 2/2",
+      "ok": true,
+      "detail": "2 / 2"
+    },
+    {
+      "name": "上一条 → ESP32-S3",
+      "ok": true,
+      "detail": "{'list': 'esp32s3-pin-planner', 'outline': 'esp32s3-pin-planner', 'cat': 'tools', 'detail': 'ESP32-S3 引脚规划器', 'step': '1 / 2', 'trigger': '查询「引脚」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/esp32s3-pin-planner?q=%E5%BC%95%E8%84%9A'}"
+    },
+    {
+      "name": "上一条后首端禁用",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "下一条 → MSPM0",
+      "ok": true,
+      "detail": "{'list': 'mspm0-pin-planner', 'outline': 'mspm0-pin-planner', 'cat': 'tools', 'detail': 'MSPM0 引脚规划器', 'step': '2 / 2', 'trigger': '查询「引脚」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/mspm0-pin-planner?q=%E5%BC%95%E8%84%9A'}"
+    },
+    {
+      "name": "下一条后末端禁用",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "工具链接解析到仓库根 tools/",
+      "ok": true,
+      "detail": "file:///D:/%E8%B5%84%E6%96%99/03-Projects%EF%BC%88%E9%A1%B9%E7%9B%AE%E5%B7%A5%E7%A8%8B%EF%BC%89/dianchuang-nav%EF%BC%88%E7%94%B5%E5%88%9B%E5%AF%BC%E8%88%AA%EF%BC%89/tools/mspm0-pin-planner.html"
+    },
+    {
+      "name": "工具页实际打开",
+      "ok": true,
+      "detail": "file:///D:/%E8%B5%84%E6%96%99/03-Projects%EF%BC%88%E9%A1%B9%E7%9B%AE%E5%B7%A5%E7%A8%8B%EF%BC%89/dianchuang-nav%EF%BC%88%E7%94%B5%E5%88%9B%E5%AF%BC%E8%88%AA%EF%BC%89/tools/mspm0-pin-planner.html"
+    },
+    {
+      "name": "工具页有真实标题",
+      "ok": true,
+      "detail": "MSPM0G 引脚规划器"
+    },
+    {
+      "name": "Ctrl+Enter 以真实 Release URL+noopener 打开",
+      "ok": true,
+      "detail": "[{'url': 'https://github.com/ww2186874-cyber/dianchuang-nav/releases/tag/jiben-gaoshu-y1', 'target': '_blank', 'features': 'noopener'}]"
+    },
+    {
+      "name": "Ctrl+Enter 不改工作台状态",
+      "ok": true,
+      "detail": "{'before': {'list': 'mspm0-pin-planner', 'outline': 'mspm0-pin-planner', 'cat': 'tools', 'detail': 'MSPM0 引脚规划器', 'step': '2 / 2', 'trigger': '查询「引脚」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/mspm0-pin-planner?q=%E5%BC%95%E8%84%9A'}, 'after': {'list': 'mspm0-pin-planner', 'outline': 'mspm0-pin-planner', 'cat': 'tools', 'detail': 'MSPM0 引脚规划器', 'step': '2 / 2', 'trigger': '查询「引脚」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/mspm0-pin-planner?q=%E5%BC%95%E8%84%9A'}}"
+    },
+    {
+      "name": "面板预填当前查询「引脚」",
+      "ok": true,
+      "detail": "引脚"
+    },
+    {
+      "name": "面板 Esc 再次恢复状态",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "鼠标点选定位 DAP",
+      "ok": true,
+      "detail": "{'list': 'tacker-dap-v3', 'outline': 'tacker-dap-v3', 'cat': 'docs', 'detail': '塔克无线DAP调试器资料 V3.0', 'step': '1 / 1', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/i/tacker-dap-v3'}"
+    },
+    {
+      "name": "空查询定位后触发器回默认",
+      "ok": true,
+      "detail": "搜索资料、打开工具…"
+    },
+    {
+      "name": "DAP 购买链接真实淘宝 + noopener",
+      "ok": true,
+      "detail": "{'href': 'https://item.taobao.com/item.htm?id=745548099223', 'target': '_blank', 'rel': 'noopener noreferrer'}"
+    },
+    {
+      "name": "合集 4 包 href 与数据逐字一致",
+      "ok": true,
+      "detail": "['https://github.com/ww2186874-cyber/dianchuang-nav/releases/download/jiben-gaoshu-y1/jiben-gaoshu-d1-shang-qizhong.zip', 'https://github.com/ww2186874-cyber/dianchuang-nav/releases/download/jiben-gaoshu-y1/jiben-gaoshu-d1-shang-qimo.zip', 'https://github.com/ww2186874-cyber/dianchuang-nav/releases/download/jiben-gaoshu-y1/jiben-gaoshu-d1-xia-qizhong.zip', 'https://github.com/ww2186874-cyber/dianchuang-nav/releases/download/jiben-gaoshu-y1/jiben-gaoshu-d1-xia-qimo.zip']"
+    },
+    {
+      "name": "4 包 _blank+noopener",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "4 包大小标注",
+      "ok": true,
+      "detail": "['52 KB · zip', '7.8 MB · zip', '620 KB · zip', '8.3 MB · zip']"
+    },
+    {
+      "name": "4 包摘要非空",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "查看全部资料包指向 Release tag",
+      "ok": true,
+      "detail": "https://github.com/ww2186874-cyber/dianchuang-nav/releases/tag/jiben-gaoshu-y1"
+    },
+    {
+      "name": "1440 资料包单列",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "空分类空态按钮",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "空分类右栏占位",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "无横向溢出 1440 空分类",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "空态按钮回全部",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "面板无结果提示",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "无结果 Enter 无副作用（面板仍开）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Esc① 清查询保留选中",
+      "ok": true,
+      "detail": "{'list': 'esp32s3-pin-planner', 'outline': 'esp32s3-pin-planner', 'cat': 'tools', 'detail': 'ESP32-S3 引脚规划器', 'step': '1 / 2', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/i/esp32s3-pin-planner'}"
+    },
+    {
+      "name": "Esc② 关详情回占位",
+      "ok": true,
+      "detail": "{'list': None, 'outline': None, 'cat': 'tools', 'detail': None, 'step': '– / 2', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/c/tools'}"
+    },
+    {
+      "name": "关详情焦点归还卡片",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "面板 Tab 12 次不逃逸",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "hash 直达跨分类同步",
+      "ok": true,
+      "detail": "{'list': 'esp32s3-pin-planner', 'outline': 'esp32s3-pin-planner', 'cat': 'tools', 'detail': 'ESP32-S3 引脚规划器', 'step': '1 / 2', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/i/esp32s3-pin-planner'}"
+    },
+    {
+      "name": "无横向溢出 1440 直达",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "1440 详情流式铺满右栏（非窄卡居中）",
+      "ok": true,
+      "detail": "{'paneW': 762, 'docW': 698.65625, 'docLeft': 31.671875, 'gapBelowBar': 20, 'sumW': 635.015625}"
+    },
+    {
+      "name": "1440 详情顶对齐（紧贴工具栏下方）",
+      "ok": true,
+      "detail": "{'paneW': 762, 'docW': 698.65625, 'docLeft': 31.671875, 'gapBelowBar': 20, 'sumW': 635.015625}"
+    },
+    {
+      "name": "1440 摘要行长 ≤ 72ch 左右",
+      "ok": true,
+      "detail": "{'paneW': 762, 'docW': 698.65625, 'docLeft': 31.671875, 'gapBelowBar': 20, 'sumW': 635.015625}"
+    },
+    {
+      "name": "品牌副标题已删",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "左下备注已删",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "中栏分类介绍已删",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "中栏底部快捷键条已删",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "顶栏装饰条伪元素已删",
+      "ok": true,
+      "detail": "('none', 'none')"
+    },
+    {
+      "name": "界面描述文案不再出现",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "真实资料摘要仍在",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "面板键位提示保留",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "详情卡顶部红黑双线伪元素已删",
+      "ok": true,
+      "detail": "{'docBefore': 'none', 'docAfter': 'none', 'docBorderTop': '1px rgb(214, 202, 182)', 'palBorderTop': '1px rgb(182, 168, 143)', 'palBorderLeft': '1px'}"
+    },
+    {
+      "name": "详情卡顶边为普通细边",
+      "ok": true,
+      "detail": "1px rgb(214, 202, 182)"
+    },
+    {
+      "name": "面板顶边为普通边框（非 3px 红）",
+      "ok": true,
+      "detail": "{'docBefore': 'none', 'docAfter': 'none', 'docBorderTop': '1px rgb(214, 202, 182)', 'palBorderTop': '1px rgb(182, 168, 143)', 'palBorderLeft': '1px'}"
+    },
+    {
+      "name": "空态无边框",
+      "ok": true,
+      "detail": "{'before': 'normal', 'after': 'none', 'borderW': '0px|0px', 'bg': 'rgba(0, 0, 0, 0)', 'shadow': 'none', 'beforeContent': 'none'}"
+    },
+    {
+      "name": "空态无卡片底色",
+      "ok": true,
+      "detail": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "空态无阴影",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "空态无装饰伪元素",
+      "ok": true,
+      "detail": "{'before': 'normal', 'after': 'none', 'borderW': '0px|0px', 'bg': 'rgba(0, 0, 0, 0)', 'shadow': 'none', 'beforeContent': 'none'}"
+    },
+    {
+      "name": "选中态功能红保留",
+      "ok": true,
+      "detail": "{'selBorder': 'rgb(176, 42, 34)', 'focusOutline': 'rgb(27, 24, 19)'}"
+    },
+    {
+      "name": "1440 空态水平居中",
+      "ok": true,
+      "detail": "{'cx': 1059, 'sx': 1059, 'vRatio': 0.42833146696528557, 'w': 698.65625, 'h2Size': 24, 'pSize': 16, 'kbds': 6, 'keyRows': 3, 'keysDisplay': 'flex', 'keysBorder': '0px', 'keysBg': 'rgba(0, 0, 0, 0)', 'text': '从中间列表选一条资料\\n\\n说明、来源、下载与相关入口会显示在这里。\\n\\n/\\n或\\nCtrl\\n+\\nK\\n搜索与定位\\n↑\\n↓\\n切换资料\\nEsc\\n关闭详情'}"
+    },
+    {
+      "name": "1440 空态视觉重心约 45%（42–48%）",
+      "ok": true,
+      "detail": "0.42833146696528557"
+    },
+    {
+      "name": "1440 空态开放排版宽松（随空间收缩）",
+      "ok": true,
+      "detail": "698.65625"
+    },
+    {
+      "name": "空态字号舒展适度",
+      "ok": true,
+      "detail": "{'cx': 1059, 'sx': 1059, 'vRatio': 0.42833146696528557, 'w': 698.65625, 'h2Size': 24, 'pSize': 16, 'kbds': 6, 'keyRows': 3, 'keysDisplay': 'flex', 'keysBorder': '0px', 'keysBg': 'rgba(0, 0, 0, 0)', 'text': '从中间列表选一条资料\\n\\n说明、来源、下载与相关入口会显示在这里。\\n\\n/\\n或\\nCtrl\\n+\\nK\\n搜索与定位\\n↑\\n↓\\n切换资料\\nEsc\\n关闭详情'}"
+    },
+    {
+      "name": "空态快捷键仅三组且键帽存在",
+      "ok": true,
+      "detail": "{'cx': 1059, 'sx': 1059, 'vRatio': 0.42833146696528557, 'w': 698.65625, 'h2Size': 24, 'pSize': 16, 'kbds': 6, 'keyRows': 3, 'keysDisplay': 'flex', 'keysBorder': '0px', 'keysBg': 'rgba(0, 0, 0, 0)', 'text': '从中间列表选一条资料\\n\\n说明、来源、下载与相关入口会显示在这里。\\n\\n/\\n或\\nCtrl\\n+\\nK\\n搜索与定位\\n↑\\n↓\\n切换资料\\nEsc\\n关闭详情'}"
+    },
+    {
+      "name": "空态键位区开放（flex 换行、无包围卡片）",
+      "ok": true,
+      "detail": "{'cx': 1059, 'sx': 1059, 'vRatio': 0.42833146696528557, 'w': 698.65625, 'h2Size': 24, 'pSize': 16, 'kbds': 6, 'keyRows': 3, 'keysDisplay': 'flex', 'keysBorder': '0px', 'keysBg': 'rgba(0, 0, 0, 0)', 'text': '从中间列表选一条资料\\n\\n说明、来源、下载与相关入口会显示在这里。\\n\\n/\\n或\\nCtrl\\n+\\nK\\n搜索与定位\\n↑\\n↓\\n切换资料\\nEsc\\n关闭详情'}"
+    },
+    {
+      "name": "空态快捷键文本准确",
+      "ok": true,
+      "detail": "从中间列表选一条资料\n\n说明、来源、下载与相关入口会显示在这里。\n\n/\n或\nCtrl\n+\nK\n搜索与定位\n↑\n↓\n切换资料\nEsc\n关闭详情"
+    },
+    {
+      "name": "空态无分隔条键位描述",
+      "ok": true,
+      "detail": "从中间列表选一条资料\n\n说明、来源、下载与相关入口会显示在这里。\n\n/\n或\nCtrl\n+\nK\n搜索与定位\n↑\n↓\n切换资料\nEsc\n关闭详情"
+    },
+    {
+      "name": "无横向溢出 1440 空态",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "空分类占位语义正确",
+      "ok": true,
+      "detail": "{'h2': '这个分类还是空的', 'btn': '查看全部资料'}"
+    },
+    {
+      "name": "无横向溢出 1440 空分类占位",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "无结果占位语义正确",
+      "ok": true,
+      "detail": "{'h2': '没有匹配的资料', 'btn': '清除搜索'}"
+    },
+    {
+      "name": "无横向溢出 1440 无结果占位",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "目录资料包项全部为按钮（无外链）",
+      "ok": true,
+      "detail": "(0, 4)"
+    },
+    {
+      "name": "目录点击后右侧瓦片定位高亮",
+      "ok": true,
+      "detail": "{'located': True, 'visible': True, 'focused': True, 'sel': 'jiben-gaoshu-y1'}"
+    },
+    {
+      "name": "目录点击后瓦片滚入详情视野",
+      "ok": true,
+      "detail": "{'located': True, 'visible': True, 'focused': True, 'sel': 'jiben-gaoshu-y1'}"
+    },
+    {
+      "name": "目录点击后焦点在瓦片",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "目录点击无 download/popup/导航",
+      "ok": true,
+      "detail": "({'download': 0, 'popup': 0}, True)"
+    },
+    {
+      "name": "目录键盘 Enter 只定位",
+      "ok": true,
+      "detail": "{'located': True, 'focused': True}"
+    },
+    {
+      "name": "键盘定位仍无 download/popup",
+      "ok": true,
+      "detail": "{'download': 0, 'popup': 0}"
+    },
+    {
+      "name": "目录键盘 Space 只定位",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Space 定位仍无 download/popup",
+      "ok": true,
+      "detail": "{'download': 0, 'popup': 0}"
+    },
+    {
+      "name": "定位高亮 2.4s 后自动褪去",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "两条分隔条可见且只读 ARIA 完整",
+      "ok": true,
+      "detail": "{'left': True, 'mid': True, 'role': 'separator', 'orient': 'vertical', 'tabL': None, 'tabM': None, 'vmin': '200', 'vmax': '420', 'vnow': '264', 'titleL': '拖动调整分类栏宽度；双击复位', 'titleM': '拖动调整列表栏宽度；双击复位'}"
+    },
+    {
+      "name": "分隔条不可 Tab 聚焦（无 tabindex）",
+      "ok": true,
+      "detail": "{'left': True, 'mid': True, 'role': 'separator', 'orient': 'vertical', 'tabL': None, 'tabM': None, 'vmin': '200', 'vmax': '420', 'vnow': '264', 'titleL': '拖动调整分类栏宽度；双击复位', 'titleM': '拖动调整列表栏宽度；双击复位'}"
+    },
+    {
+      "name": "分隔条 title 无键盘调宽描述",
+      "ok": true,
+      "detail": "{'left': True, 'mid': True, 'role': 'separator', 'orient': 'vertical', 'tabL': None, 'tabM': None, 'vmin': '200', 'vmax': '420', 'vnow': '264', 'titleL': '拖动调整分类栏宽度；双击复位', 'titleM': '拖动调整列表栏宽度；双击复位'}"
+    },
+    {
+      "name": "Tab 30 次不聚焦分隔条",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "左边界拖动 +80 生效",
+      "ok": true,
+      "detail": "({'left': 264, 'mid': 400, 'detail': 762, 'gridCols': 1}, {'left': 344, 'mid': 400, 'detail': 682, 'gridCols': 1})"
+    },
+    {
+      "name": "无横向溢出 1440 拖左边界后",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "中边界拖动 -60 生效",
+      "ok": true,
+      "detail": "({'left': 344, 'mid': 400, 'detail': 682, 'gridCols': 1}, {'left': 344, 'mid': 340, 'detail': 742, 'gridCols': 1})"
+    },
+    {
+      "name": "无横向溢出 1440 拖中边界后",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "切换条目/开关面板后宽度保持",
+      "ok": true,
+      "detail": "({'left': 344, 'mid': 340, 'detail': 742, 'gridCols': 1}, {'left': 344, 'mid': 340, 'detail': 742, 'gridCols': 1})"
+    },
+    {
+      "name": "方向键/Home/End 不改变列宽",
+      "ok": true,
+      "detail": "({'left': 344, 'mid': 340, 'detail': 742, 'gridCols': 1}, {'left': 344, 'mid': 340, 'detail': 742, 'gridCols': 0})"
+    },
+    {
+      "name": "分隔条元素按键事件无效",
+      "ok": true,
+      "detail": "{'left': 344, 'mid': 340, 'detail': 742, 'gridCols': 0}"
+    },
+    {
+      "name": "左栏拖到极大被 max 钳制",
+      "ok": true,
+      "detail": "{'left': 420, 'mid': 340, 'detail': 666, 'gridCols': 0}"
+    },
+    {
+      "name": "无横向溢出 1440 左栏 max",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "两栏同拖极大右栏保底 ≥320",
+      "ok": true,
+      "detail": "{'left': 420, 'mid': 560, 'detail': 446, 'gridCols': 0}"
+    },
+    {
+      "name": "无横向溢出 1440 双栏 max 右栏保底",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "左栏拖到极小被 min 钳制",
+      "ok": true,
+      "detail": "{'left': 200, 'mid': 560, 'detail': 666, 'gridCols': 0}"
+    },
+    {
+      "name": "无横向溢出 1440 左栏 min",
+      "ok": true,
+      "detail": "{'sw': 1440, 'iw': 1440, 'bsw': 1440}"
+    },
+    {
+      "name": "双击复位回默认 264/400",
+      "ok": true,
+      "detail": "{'left': 264, 'mid': 400, 'detail': 762, 'gridCols': 0}"
+    },
+    {
+      "name": "1920 右栏双区：资料包 2×2",
+      "ok": true,
+      "detail": "{'paneW': 1242, 'docW': 1162, 'cols': 2, 'headCols': 2, 'row1': True, 'row2': True, 'twoRows': True}"
+    },
+    {
+      "name": "1920 页头双列（标题区+元信息区）",
+      "ok": true,
+      "detail": "{'paneW': 1242, 'docW': 1162, 'cols': 2, 'headCols': 2, 'row1': True, 'row2': True, 'twoRows': True}"
+    },
+    {
+      "name": "1920 详情占用右栏 ≥85%",
+      "ok": true,
+      "detail": "{'paneW': 1242, 'docW': 1162, 'cols': 2, 'headCols': 2, 'row1': True, 'row2': True, 'twoRows': True}"
+    },
+    {
+      "name": "无横向溢出 1920 默认",
+      "ok": true,
+      "detail": "{'sw': 1920, 'iw': 1920, 'bsw': 1920}"
+    },
+    {
+      "name": "1920 初始双列",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "中栏拖宽 160 到 max 560",
+      "ok": true,
+      "detail": "560"
+    },
+    {
+      "name": "左边界拖到 max 420",
+      "ok": true,
+      "detail": "420"
+    },
+    {
+      "name": "两栏均 max 后右栏 <960",
+      "ok": true,
+      "detail": "926"
+    },
+    {
+      "name": "右栏 <960 容器查询切单列",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "无横向溢出 1920 双栏 max",
+      "ok": true,
+      "detail": "{'sw': 1920, 'iw': 1920, 'bsw': 1920}"
+    },
+    {
+      "name": "中栏双击复位后恢复双列",
+      "ok": true,
+      "detail": "2"
+    },
+    {
+      "name": "左栏双击复位",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "1920 普通条目说明/操作分栏",
+      "ok": true,
+      "detail": "{'display': 'grid', 'sideBySide': True}"
+    },
+    {
+      "name": "无横向溢出 1920 普通条目",
+      "ok": true,
+      "detail": "{'sw': 1920, 'iw': 1920, 'bsw': 1920}"
+    },
+    {
+      "name": "2550 详情铺满右栏（≥95%，无固定上限）",
+      "ok": true,
+      "detail": "{'paneW': 1872, 'docW': 1792, 'docLeft': 40, 'gapBelowBar': 20, 'cols': 2, 'tileW': 844, 'row1': True, 'twoRows': True, 'sumW': 675.5625, 'h2W': 966.265625, 'rightGap': 40}"
+    },
+    {
+      "name": "2550 详情左右留白对称（各约 40px）",
+      "ok": true,
+      "detail": "{'paneW': 1872, 'docW': 1792, 'docLeft': 40, 'gapBelowBar': 20, 'cols': 2, 'tileW': 844, 'row1': True, 'twoRows': True, 'sumW': 675.5625, 'h2W': 966.265625, 'rightGap': 40}"
+    },
+    {
+      "name": "2550 详情顶对齐",
+      "ok": true,
+      "detail": "{'paneW': 1872, 'docW': 1792, 'docLeft': 40, 'gapBelowBar': 20, 'cols': 2, 'tileW': 844, 'row1': True, 'twoRows': True, 'sumW': 675.5625, 'h2W': 966.265625, 'rightGap': 40}"
+    },
+    {
+      "name": "2550 无 1560 固定上限",
+      "ok": true,
+      "detail": "1792"
+    },
+    {
+      "name": "2550 资料包 2×2 双列",
+      "ok": true,
+      "detail": "{'paneW': 1872, 'docW': 1792, 'docLeft': 40, 'gapBelowBar': 20, 'cols': 2, 'tileW': 844, 'row1': True, 'twoRows': True, 'sumW': 675.5625, 'h2W': 966.265625, 'rightGap': 40}"
+    },
+    {
+      "name": "2550 单瓦片宽度合理（≥500px）",
+      "ok": true,
+      "detail": "844"
+    },
+    {
+      "name": "2550 摘要不拉超长单行（≤900px）",
+      "ok": true,
+      "detail": "675.5625"
+    },
+    {
+      "name": "无横向溢出 2550 默认",
+      "ok": true,
+      "detail": "{'sw': 2550, 'iw': 2550, 'bsw': 2550}"
+    },
+    {
+      "name": "2550 空态水平居中（误差≤4px）",
+      "ok": true,
+      "detail": "{'dx': 0, 'vRatio': 0.4338750203450521, 'w': 860, 'h': 202.53125, 'areaW': 1872, 'areaH': 1200, 'borderW': '0px', 'bg': 'rgba(0, 0, 0, 0)', 'shadow': 'none', 'kbds': 6, 'keyRows': 3}"
+    },
+    {
+      "name": "2550 空态视觉重心约 45%（42–48%）",
+      "ok": true,
+      "detail": "0.4338750203450521"
+    },
+    {
+      "name": "2550 空态宽度 760–900 宽松区",
+      "ok": true,
+      "detail": "860"
+    },
+    {
+      "name": "2550 空态无边框/底色/阴影",
+      "ok": true,
+      "detail": "{'dx': 0, 'vRatio': 0.4338750203450521, 'w': 860, 'h': 202.53125, 'areaW': 1872, 'areaH': 1200, 'borderW': '0px', 'bg': 'rgba(0, 0, 0, 0)', 'shadow': 'none', 'kbds': 6, 'keyRows': 3}"
+    },
+    {
+      "name": "2550 空态三组键位",
+      "ok": true,
+      "detail": "{'dx': 0, 'vRatio': 0.4338750203450521, 'w': 860, 'h': 202.53125, 'areaW': 1872, 'areaH': 1200, 'borderW': '0px', 'bg': 'rgba(0, 0, 0, 0)', 'shadow': 'none', 'kbds': 6, 'keyRows': 3}"
+    },
+    {
+      "name": "无横向溢出 2550 空态",
+      "ok": true,
+      "detail": "{'sw': 2550, 'iw': 2550, 'bsw': 2550}"
+    },
+    {
+      "name": "空态后重选详情仍 fluid 铺满",
+      "ok": true,
+      "detail": "{'ratio': 0.9572649572649573, 'emptyCls': False}"
+    },
+    {
+      "name": "合集小包真实下载触发",
+      "ok": true,
+      "detail": "jiben-gaoshu-d1-shang-qizhong.zip"
+    },
+    {
+      "name": "无横向溢出 2550 普通条目",
+      "ok": true,
+      "detail": "{'sw': 2550, 'iw': 2550, 'bsw': 2550}"
+    },
+    {
+      "name": "无横向溢出 2550 面板",
+      "ok": true,
+      "detail": "{'sw': 2550, 'iw': 2550, 'bsw': 2550}"
+    },
+    {
+      "name": "无横向溢出 2550 搜索态",
+      "ok": true,
+      "detail": "{'sw': 2550, 'iw': 2550, 'bsw': 2550}"
+    },
+    {
+      "name": "手机默认列表页（不自动弹详情）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "手机详情层 inert",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "360 不出现分隔条",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "无横向溢出 360 默认",
+      "ok": true,
+      "detail": "{'sw': 360, 'iw': 360, 'bsw': 360}"
+    },
+    {
+      "name": "无横向溢出 360 空分类占位",
+      "ok": true,
+      "detail": "{'sw': 360, 'iw': 360, 'bsw': 360}"
+    },
+    {
+      "name": "抽屉 dialog+aria-modal",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "抽屉焦点进入",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "抽屉底层 inert",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "抽屉 Tab 10 次不逃逸",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "抽屉 Esc 关闭且焦点归还汉堡",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "抽屉选分类自动收起",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "分类过滤生效（1 条 DAP）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "手机点条目开全屏详情",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "详情焦点入标题",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "详情层底层 inert",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "无横向溢出 360 详情",
+      "ok": true,
+      "detail": "{'sw': 360, 'iw': 360, 'bsw': 360}"
+    },
+    {
+      "name": "360 资料包单列",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "手机详情内下一条",
+      "ok": true,
+      "detail": "{'list': 'tacker-dap-v3', 'outline': 'tacker-dap-v3', 'cat': '', 'detail': '塔克无线DAP调试器资料 V3.0', 'step': '2 / 4', 'trigger': '搜索资料、打开工具…', 'qclearHidden': True, 'hash': '#/i/tacker-dap-v3'}"
+    },
+    {
+      "name": "手机步进保持详情层",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "返回列表关闭详情层",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "返回后焦点归还原卡片",
+      "ok": true,
+      "detail": "<button class=\"result-card\" type=\"button\" data-item=\"jiben-gaoshu-y1\" aria-pressed=\"false\"><span class=\"rc-top\"><span cl"
+    },
+    {
+      "name": "无横向溢出 360 返回后",
+      "ok": true,
+      "detail": "{'sw': 360, 'iw': 360, 'bsw': 360}"
+    },
+    {
+      "name": "手机面板打开",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "手机面板定位后直接进详情",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "手机定位三栏状态正确",
+      "ok": true,
+      "detail": "{'list': 'jiben-gaoshu-y1', 'outline': 'jiben-gaoshu-y1', 'cat': 'heritage', 'detail': '技本高数 · 大一历年真题', 'step': '1 / 1', 'trigger': '查询「高数」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/jiben-gaoshu-y1?q=%E9%AB%98%E6%95%B0'}"
+    },
+    {
+      "name": "无横向溢出 360 面板定位后",
+      "ok": true,
+      "detail": "{'sw': 360, 'iw': 360, 'bsw': 360}"
+    },
+    {
+      "name": "手机返回后保持选中（供目录展开）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "手机抽屉内目录资料包为按钮",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "手机目录定位关闭抽屉",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "手机目录定位打开详情层",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "手机目录定位瓦片高亮且可见",
+      "ok": true,
+      "detail": "{'located': True, 'visible': True}"
+    },
+    {
+      "name": "手机目录定位无 download/popup/外部导航",
+      "ok": true,
+      "detail": "{'download': 0, 'popup': 0}"
+    },
+    {
+      "name": "无横向溢出 360 目录定位后",
+      "ok": true,
+      "detail": "{'sw': 360, 'iw': 360, 'bsw': 360}"
+    },
+    {
+      "name": "无横向溢出 360 搜索列表态",
+      "ok": true,
+      "detail": "{'sw': 360, 'iw': 360, 'bsw': 360}"
+    },
+    {
+      "name": "无横向溢出 360 清除后",
+      "ok": true,
+      "detail": "{'sw': 360, 'iw': 360, 'bsw': 360}"
+    },
+    {
+      "name": "reduced-motion 面板动画 ≈0",
+      "ok": true,
+      "detail": "1e-06"
+    },
+    {
+      "name": "reduced-motion 功能正常",
+      "ok": true,
+      "detail": "{'list': 'esp32s3-pin-planner', 'outline': 'esp32s3-pin-planner', 'cat': 'tools', 'detail': 'ESP32-S3 引脚规划器', 'step': '1 / 2', 'trigger': '查询「引脚」 · 点击修改', 'qclearHidden': False, 'hash': '#/i/esp32s3-pin-planner?q=%E5%BC%95%E8%84%9A'}"
+    },
+    {
+      "name": "reduced-motion 过渡 ≈0",
+      "ok": true,
+      "detail": "1e-06"
+    },
+    {
+      "name": "全程无页面 JS 错误",
+      "ok": true,
+      "detail": "[]"
+    }
+  ],
+  "pageErrors": []
+}
